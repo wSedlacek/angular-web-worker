@@ -646,14 +646,17 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
 
     it('Should be rejected if the worker returns an error response', async () => {
       spyOn<any>(client, 'generateSecretKey').and.returnValue('requestsecret');
-      PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, requestOpts()).catch(() => {
-        expect(true).toEqual(true);
-      });
-      await sleep(10);
-
       PrivateClientUtils.worker(client).onmessage(
         new MessageEvent('response', { data: response({ isError: true }) })
       );
+
+      const promise = PrivateClientUtils.sendRequest(
+        client,
+        WorkerEvents.Accessible,
+        requestOpts()
+      );
+
+      await expectAsync(promise).toBeRejected();
     }, 1000);
 
     it('Should remove the request secret from the secrets array when rejected', async () => {
