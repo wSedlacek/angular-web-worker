@@ -1,5 +1,6 @@
-import { Accessible } from '../src/public-api';
-import { WorkerAnnotations, AccessibleMetaData } from '../../common/src/public-api';
+import { WorkerAnnotations, AccessibleMetaData } from 'angular-web-worker/common';
+
+import { Accessible } from './accessible.decorator';
 
 class TestClassWithoutOptions {
   @Accessible()

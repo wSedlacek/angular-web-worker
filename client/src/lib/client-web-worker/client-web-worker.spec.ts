@@ -1,6 +1,6 @@
-import { ClientWebWorker } from './../src/public-api';
-import { WebWorker, WorkerController } from '../../worker/src/public-api';
-import { WorkerEvents } from 'angular-web-worker/common';
+import { WebWorker, WorkerController } from 'angular-web-worker';
+
+import { ClientWebWorker } from './client-web-worker';
 
 @WebWorker()
 export class TestClass {}

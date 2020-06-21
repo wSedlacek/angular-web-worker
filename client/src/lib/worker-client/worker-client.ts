@@ -1,5 +1,10 @@
 import { Subject, Subscription, Observable } from 'rxjs';
-import { WorkerClientObservablesDict, WorkerClientRequestOpts } from './worker-client-types';
+import {
+  ClientWebWorker,
+  WorkerClientObservablesDict,
+  WorkerClientRequestOpts,
+  WorkerDefinition,
+} from 'angular-web-worker/client';
 import {
   WorkerResponseEvent,
   WorkerEvents,
@@ -17,8 +22,6 @@ import {
   WorkerObservableMessage,
   WorkerObservableMessageTypes,
 } from 'angular-web-worker/common';
-import { WorkerDefinition } from './worker.module';
-import { ClientWebWorker } from './client-web-worker';
 
 /**
  * Provides functionality for an Angular app to access the properties, call the methods and subscribe to the events in a web worker by managing

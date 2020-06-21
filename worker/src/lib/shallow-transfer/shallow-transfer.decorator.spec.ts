@@ -1,5 +1,6 @@
-import { ShallowTransfer } from '../src/public-api';
-import { WorkerAnnotations, ShallowTransferParamMetaData } from '../../common/src/public-api';
+import { WorkerAnnotations, ShallowTransferParamMetaData } from 'angular-web-worker/common';
+
+import { ShallowTransfer } from './shallow-transfer.decorator';
 
 class TestClass {
   doSomething(name: string, @ShallowTransfer() age: number) {}

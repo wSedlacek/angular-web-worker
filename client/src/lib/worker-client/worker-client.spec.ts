@@ -1,16 +1,9 @@
+import { WebWorker, Accessible, OnWorkerInit, Callable, Subscribable } from 'angular-web-worker';
 import {
-  WebWorker,
-  Accessible,
-  OnWorkerInit,
-  Callable,
-  Subscribable,
-} from '../../worker/src/public-api';
-import {
-  WorkerClient,
   WorkerClientObservablesDict,
   WorkerClientRequestOpts,
   ClientWebWorker,
-} from '../src/public-api';
+} from 'angular-web-worker/client';
 import {
   WorkerAnnotations,
   WorkerEvents,
@@ -19,8 +12,10 @@ import {
   WorkerResponseEvent,
   WorkerEvent,
   WorkerObservableMessageTypes,
-} from '../../common/src/public-api';
+} from 'angular-web-worker/common';
 import { Subject, Observable } from 'rxjs';
+
+import { WorkerClient } from './worker-client';
 
 class TestUser {
   name: string;

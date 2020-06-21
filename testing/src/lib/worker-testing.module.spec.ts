@@ -1,12 +1,14 @@
-import { WebWorker } from './../../worker/src/public-api';
-import { WorkerTestingModule } from './../src/public-api';
 import { TestBed } from '@angular/core/testing';
-import { WorkerManager } from 'angular-web-worker/client';
-import { WorkerTestingManager } from 'testing/src/lib/worker-testing-manager';
 import {
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
+
+import { WebWorker } from 'angular-web-worker';
+import { WorkerManager } from 'angular-web-worker/client';
+import { WorkerTestingManager } from 'angular-web-worker/testing';
+
+import { WorkerTestingModule } from './worker-testing.module';
 
 @WebWorker()
 class TestClass {}

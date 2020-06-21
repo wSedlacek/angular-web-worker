@@ -1,5 +1,6 @@
-import { WorkerUtils } from 'angular-web-worker/common';
 import { WorkerAnnotations } from 'angular-web-worker/common';
+
+import { WorkerUtils } from './worker-utils';
 
 class TestClass {
   constructor() {}

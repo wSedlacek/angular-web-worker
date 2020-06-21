@@ -1,6 +1,6 @@
 import { WorkerModule, WorkerManager } from 'angular-web-worker/client';
 import { WebWorkerType, WorkerUtils, WorkerAnnotations } from 'angular-web-worker/common';
-import { WorkerTestingManager } from './worker-testing-manager';
+import { WorkerTestingManager } from './worker-testing-manager/worker-testing-manager';
 
 /**
  * **Used for Testing**

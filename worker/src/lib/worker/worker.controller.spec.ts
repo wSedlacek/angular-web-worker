@@ -6,20 +6,20 @@ import {
   Accessible,
   OnWorkerInit,
   Subscribable,
-} from '../src/public-api';
+} from '../../public-api';
 import {
   WorkerRequestEvent,
   WorkerCallableBody,
   WorkerSubscribableBody,
   WorkerObservableMessage,
   WorkerObservableMessageTypes,
-} from '../../common/src/public-api';
+} from '../../../../common/src/public-api';
 import {
   WorkerEvents,
   WorkerAnnotations,
   WorkerResponseEvent,
   WorkerAccessibleBody,
-} from '../../common/src/public-api';
+} from '../../../../common/src/public-api';
 import { Subject, Subscription } from 'rxjs';
 
 class TestUser {

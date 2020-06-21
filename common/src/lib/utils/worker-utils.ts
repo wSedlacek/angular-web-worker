@@ -1,4 +1,4 @@
-import { WorkerAnnotations, WorkerConfig } from './annotations';
+import { WorkerAnnotations } from 'angular-web-worker/common';
 
 /**
  * A set of static utility functions for creating and retrieving worker annotations

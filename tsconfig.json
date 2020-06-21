@@ -16,6 +16,7 @@
       "angular-web-worker": ["./worker/src/public-api.ts"],
       "angular-web-worker/client": ["./client/src/public-api.ts"],
       "angular-web-worker/common": ["./common/src/public-api.ts"],
+      "angular-web-worker/testing": ["./testing/src/public-api.ts"],
       "angular-web-worker/*": ["./dist/*"]
     }
   },

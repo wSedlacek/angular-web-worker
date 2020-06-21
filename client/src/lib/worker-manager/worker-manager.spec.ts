@@ -1,5 +1,7 @@
-import { WorkerManager, WorkerDefinition, WorkerClient } from './../src/public-api';
-import { WebWorker } from './../../worker/src/public-api';
+import { WebWorker } from 'angular-web-worker';
+import { WorkerDefinition, WorkerClient } from 'angular-web-worker/client';
+
+import { WorkerManager } from './worker-manager';
 
 @WebWorker()
 class TestClass {

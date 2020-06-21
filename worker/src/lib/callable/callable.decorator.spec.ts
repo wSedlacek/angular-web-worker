@@ -1,11 +1,12 @@
-import { Callable } from '../src/public-api';
 import {
   WorkerAnnotations,
   CallableMetaData,
   WorkerConfig,
   SecretResult,
   WorkerEvents,
-} from '../../common/src/public-api';
+} from 'angular-web-worker/common';
+
+import { Callable } from './callable.decorator';
 
 class TestClassWithoutOptions {
   @Callable()

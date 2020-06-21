@@ -1,12 +1,13 @@
-import { WebWorker, Accessible, WorkerFactoryFunctions } from '../src/public-api';
+import { Accessible, Subscribable } from 'angular-web-worker';
 import {
   WorkerAnnotations,
   WorkerConfig,
   WorkerEvents,
   SecretResult,
-} from '../../common/src/public-api';
-import { Subscribable } from '../src/public-api';
+} from 'angular-web-worker/common';
 import { Subject } from 'rxjs';
+
+import { WebWorker, WorkerFactoryFunctions } from './web-worker.decorator';
 
 @WebWorker()
 class WorkerTestClass {

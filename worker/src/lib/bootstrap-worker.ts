@@ -1,4 +1,4 @@
-import { WorkerController } from './worker-controller';
+import { WorkerController } from './worker/worker.controller';
 import { WebWorkerType, WorkerMessageBus } from 'angular-web-worker/common';
 
 /**

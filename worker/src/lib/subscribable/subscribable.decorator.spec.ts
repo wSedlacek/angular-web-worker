@@ -1,6 +1,7 @@
-import { WorkerAnnotations, SubscribableMetaData } from '../../common/src/public-api';
-import { Subscribable } from '../src/public-api';
+import { WorkerAnnotations, SubscribableMetaData } from 'angular-web-worker/common';
 import { Subject } from 'rxjs';
+
+import { Subscribable } from './subscribable.decorator';
 
 class TestClass {
   @Subscribable()

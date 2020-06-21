@@ -1,6 +1,5 @@
-import { WorkerClient } from './worker-client';
-import { WorkerDefinition } from './worker.module';
 import { WebWorkerType } from 'angular-web-worker/common';
+import { WorkerClient, WorkerDefinition } from 'angular-web-worker/client';
 
 /**
  * Injectable angular service with a primary responsibility of acting as `WorkerClient` factory through its `createClient()` method.

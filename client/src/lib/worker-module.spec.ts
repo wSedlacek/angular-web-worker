@@ -1,10 +1,13 @@
-import { WebWorker } from './../../worker/src/public-api';
-import { WorkerModule, WorkerManager } from './../src/public-api';
 import { TestBed } from '@angular/core/testing';
 import {
   platformBrowserDynamicTesting,
   BrowserDynamicTestingModule,
 } from '@angular/platform-browser-dynamic/testing';
+
+import { WebWorker } from 'angular-web-worker';
+import { WorkerManager } from 'angular-web-worker/client';
+
+import { WorkerModule } from './worker.module';
 
 @WebWorker()
 class TestClass {}
