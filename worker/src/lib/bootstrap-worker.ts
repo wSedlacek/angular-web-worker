@@ -1,4 +1,3 @@
-
 import { WorkerController } from './worker-controller';
 import { WebWorkerType, WorkerMessageBus } from 'angular-web-worker/common';
 
@@ -7,17 +6,15 @@ import { WebWorkerType, WorkerMessageBus } from 'angular-web-worker/common';
  * @param worker worker class to bootstrap
  */
 export function bootstrapWorker<T>(worker: WebWorkerType<T>) {
+  const messageBus: WorkerMessageBus = {
+    onmessage: (ev: MessageEvent) => {},
+    postMessage: (msg: Response) => {
+      (postMessage as Function)(msg);
+    },
+  };
+  const workerController = new WorkerController<T>(worker, messageBus);
 
-    const messageBus: WorkerMessageBus = {
-        onmessage: (ev: MessageEvent) => {
-        },
-        postMessage: (msg: Response) => {
-            (postMessage as Function)(msg);
-        }
-    };
-    const workerController = new WorkerController<T>(worker, messageBus);
-
-    onmessage = (ev: MessageEvent) => {
-        messageBus.onmessage(ev);
-    };
+  onmessage = (ev: MessageEvent) => {
+    messageBus.onmessage(ev);
+  };
 }

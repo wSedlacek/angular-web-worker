@@ -10,27 +10,30 @@ import { WorkerTestingClient } from './worker-testing-client';
  *
  */
 export class WorkerTestingManager extends WorkerManager {
+  constructor(private workers: WebWorkerType<any>[]) {
+    super(
+      workers.map((x) => {
+        return { worker: x, initFn: () => null };
+      })
+    );
 
-    constructor(private workers: WebWorkerType<any>[]) {
-
-        super(workers.map(x => {
-            return { worker: x, initFn: () => null };
-        }));
-
-        if (!workers) {
-            throw new Error('the workers argument for the TestWorkerManager constructor cannot be undefined or null');
-        }
+    if (!workers) {
+      throw new Error(
+        'the workers argument for the TestWorkerManager constructor cannot be undefined or null'
+      );
     }
+  }
 
-    createClient<T>(workerType: WebWorkerType<T>, runInApp: boolean = false): WorkerClient<T> {
-        const definition = this.workers.filter(p => p === workerType)[0];
-        if (definition) {
-            return new WorkerTestingClient<T>({ worker: workerType, initFn: () => null });
-        } else {
-            throw new Error('WorkerManager: all web workers must be registered in the createTestManager function');
-        }
+  createClient<T>(workerType: WebWorkerType<T>, runInApp: boolean = false): WorkerClient<T> {
+    const definition = this.workers.filter((p) => p === workerType)[0];
+    if (definition) {
+      return new WorkerTestingClient<T>({ worker: workerType, initFn: () => null });
+    } else {
+      throw new Error(
+        'WorkerManager: all web workers must be registered in the createTestManager function'
+      );
     }
-
+  }
 }
 
 /**
@@ -38,5 +41,5 @@ export class WorkerTestingManager extends WorkerManager {
  * @param workers array of workers that can be created through the `createClient` method
  */
 export function createTestManager(workers: WebWorkerType<any>[]): WorkerTestingManager {
-    return new WorkerTestingManager(workers);
+  return new WorkerTestingManager(workers);
 }

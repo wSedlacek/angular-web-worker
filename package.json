@@ -12,9 +12,9 @@
     "build": "npm run build:pkg && npm run build:schematics"
   },
   "schematics": "./schematics/collection.json",
-  "author": { 
-    "name" : "Gavin Leo-Smith", 
-    "email" : "gavin@gleo-smith.co.za"
+  "author": {
+    "name": "Gavin Leo-Smith",
+    "email": "gavin@gleo-smith.co.za"
   },
   "license": "MIT",
   "keywords": [
@@ -23,14 +23,13 @@
     "web worker",
     "typescript"
   ],
-
   "bugs": {
     "url": "https://github.com/gleosmith/angular-web-worker/issues"
   },
   "homepage": "https://github.com/gleosmith/angular-web-worker#readme",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/gleosmith/angular-web-worker.git"
+    "type": "git",
+    "url": "https://github.com/gleosmith/angular-web-worker.git"
   },
   "peerDependencies": {
     "reflect-metadata": "^0.1.13",

@@ -3,7 +3,7 @@ import { <%= classify(name) %>Worker } from './<%= dasherize(name) %>.worker';
 
 describe('<%= classify(name) %>Worker', () => {
 
-    // decorated methods/properties should always be tested through the WorkerTestingClient to mock the serialization behaviour
+    // decorated methods/properties should always be tested through the WorkerTestingClient to mock the serialization behavior
     let client: WorkerTestingClient<<%= classify(name) %>Worker>;
 
     beforeEach(() => {

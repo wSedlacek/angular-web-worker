@@ -1,6 +1,6 @@
 # Description
 
-An Angular library providing an easier way to work web workers in an Angular application. It allows you to interact with a web worker in similiar way to using a simple TypeScript class, enjoying all the features of the TypeScript language as the more messy communication is handled for you. Only supported with Angular 8+
+An Angular library providing an easier way to work web workers in an Angular application. It allows you to interact with a web worker in similar way to using a simple TypeScript class, enjoying all the features of the TypeScript language as the more messy communication is handled for you. Only supported with Angular 8+
 
 # Getting Started
 
@@ -14,33 +14,34 @@ An Angular library providing an easier way to work web workers in an Angular app
 
 > ng g angular-web-worker:angular-web-worker
 
-*app.worker.ts*
+_app.worker.ts_
+
 ```typescript
 import { AngularWebWorker, bootstrapWorker, OnWorkerInit } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
+  constructor() {}
 
-    constructor() {}
-
-    onWorkerInit() {
-    }
-
+  onWorkerInit() {}
 }
 bootstrapWorker(AppWorker);
 ```
+
 **IMPORTANT:**
+
 - If you have already used the web-worker schematics from the standard angular-cli v8+ _(ng generate web-worker)_ within your angular app, then you will need to modify the tsconfig.json in the project's root directory by removing "\*\*/\*.worker.ts" from the "exclude" property. If you have not done this the command _ng g angular-web-worker:angular-web-worker_ will prompt you to do so with an error message.
-- The worker class cannot directly or indirectly have any import references from the `@angular/core` library as this will cause build errors when the worker is bundled seperately by the [worker-plugin](https://github.com/GoogleChromeLabs/worker-plugin) for webpack. As such, this library has been built to consist of several sub-packages to ensure that the `@angular/core` library is not indirectly imported into a worker class.
+- The worker class cannot directly or indirectly have any import references from the `@angular/core` library as this will cause build errors when the worker is bundled separately by the [worker-plugin](https://github.com/GoogleChromeLabs/worker-plugin) for webpack. As such, this library has been built to consist of several sub-packages to ensure that the `@angular/core` library is not indirectly imported into a worker class.
 
 # Usage
 
 ## The WorkerModule
-Once a new worker class has been created, a definition of the worker must be imported into an Angular module through WorkerModule.forWorkers(definitions[]). This plays two roles, it provides an injectable Angular service which is used to create clients that communicate between the Angular app and the worker script. It is also contains the syntax which allows the [worker-plugin](https://github.com/GoogleChromeLabs/worker-plugin) for webpack to detect the worker classes and create seperate bundles that can be loaded as worker scripts in the browser. The [worker-plugin](https://github.com/GoogleChromeLabs/worker-plugin) requires a specific syntax to create these seperate bundles.
 
+Once a new worker class has been created, a definition of the worker must be imported into an Angular module through WorkerModule.forWorkers(definitions[]). This plays two roles, it provides an injectable Angular service which is used to create clients that communicate between the Angular app and the worker script. It is also contains the syntax which allows the [worker-plugin](https://github.com/GoogleChromeLabs/worker-plugin) for webpack to detect the worker classes and create separate bundles that can be loaded as worker scripts in the browser. The [worker-plugin](https://github.com/GoogleChromeLabs/worker-plugin) requires a specific syntax to create these separate bundles.
 
-*app.module.ts*
+_app.module.ts_
+
 ```typescript
 import { WorkerModule } from 'angular-web-worker/angular';
 import { AppWorker } from './app.worker';
@@ -58,10 +59,13 @@ import { AppWorker } from './app.worker';
 })
 export class AppModule { }
 ```
-## The WorkerClient
-Once the defintion/s have been imported into a module the WorkerManager service can be used to create new clients which have the functionality to create, communicate with and terminate workers throughout the angular application. While it seems as if the client calls the worker class directly, the standard postMessage and onmessage communication mechanism is still used under the hood therefore all data is still serialized. Therefore when any class/object is sent to and/or recieved from a worker the data is copied and it's functions/methods will not be transfered. Circular referencing data structures are not serializable. For more on web workers see [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
 
-*app.component.ts*
+## The WorkerClient
+
+Once the definition/s have been imported into a module the WorkerManager service can be used to create new clients which have the functionality to create, communicate with and terminate workers throughout the angular application. While it seems as if the client calls the worker class directly, the standard postMessage and onmessage communication mechanism is still used under the hood therefore all data is still serialized. Therefore when any class/object is sent to and/or recieved from a worker the data is copied and it's functions/methods will not be transferred. Circular referencing data structures are not serializable. For more on web workers see [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers)
+
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -79,16 +83,17 @@ export class AppComponent implements OnInit {
     if (this.workerManager.isBrowserCompatible) {
       this.client = this.workerManager.createClient(AppWorker);
     } else {
-      // if code won't block UI else implement other fallback behaviour
+      // if code won't block UI else implement other fallback behavior
       this.client = this.workerManager.createClient(AppWorker, true);
     }
   }
 
 }
 ```
-***RUNNING THE WORKER IN THE APPLICATION***
 
-The `WorkerManager.createClient()` method has an optional argument to run the worker inside the application, essentially keeping it within the application's "thread". This can be used as fallback behaviour if the browser does not support web workers, however it should be used with caution as intensive work will impact the performance and the user experience. In this case, no data is serialized in order to avoid the "expensive" serialization operations that will hinder performance. However, the worker should be designed with serialization in mind so that the functionality to execute the code in either a seperate worker script or within the app can be used interchangably. For this reason, it is important to use the testing utilities provided by the library which mocks this behaviour to ensure the code works as expected under both circumstances.
+**_RUNNING THE WORKER IN THE APPLICATION_**
+
+The `WorkerManager.createClient()` method has an optional argument to run the worker inside the application, essentially keeping it within the application's "thread". This can be used as fallback behavior if the browser does not support web workers, however it should be used with caution as intensive work will impact the performance and the user experience. In this case, no data is serialized in order to avoid the "expensive" serialization operations that will hinder performance. However, the worker should be designed with serialization in mind so that the functionality to execute the code in either a separate worker script or within the app can be used interchangeably. For this reason, it is important to use the testing utilities provided by the library which mocks this behavior to ensure the code works as expected under both circumstances.
 
 ## Creating a Worker
 
@@ -98,7 +103,8 @@ The `WorkerClient.connect()` method will create a new worker in the browser and 
 
 Any logic or initialization of variables in the constructor of the worker class will cause exceptions to be thrown given that both a client instance and a worker instance of the same class are created behind the scenes. Therefore, the `OnWorkerInit` has been provided as a replacement for the constructor.
 
-*app.worker.ts*
+_app.worker.ts_
+
 ```typescript
 import { AngularWebWorker, bootstrapWorker, OnWorkerInit } from 'angular-web-worker';
 import { Subject } from 'rxjs';
@@ -106,24 +112,23 @@ import { Subject } from 'rxjs';
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
+  private event: Subject<any>;
+  private data: any;
 
-    private event: Subject<any>;
-    private data: any;
+  constructor() {}
 
-    constructor() {}
-
-    async onWorkerInit() {
-      // can also be a synchronous function
-      this.event = new Subject<any>();
-      const resp = await fetch('http://example.com');
-      this.data = await resp.json();
-    }
-
+  async onWorkerInit() {
+    // can also be a synchronous function
+    this.event = new Subject<any>();
+    const resp = await fetch('http://example.com');
+    this.data = await resp.json();
+  }
 }
 bootstrapWorker(AppWorker);
 ```
 
-*app.component.ts*
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -155,9 +160,10 @@ export class AppComponent implements OnInit {
 
 ## Creating Multiple Workers
 
-Each client is responsable for a single worker, therefore creating multiple instances of the same worker simply involves creating multiple clients
+Each client is responsible for a single worker, therefore creating multiple instances of the same worker simply involves creating multiple clients
 
-*app.component.ts*
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -191,29 +197,29 @@ export class AppComponent implements OnInit {
 
 ## Accessing Worker Properties
 
-When a worker property is decorated with `@Accessable()` that property can be accessed by a client through the `WorkerClient.get()` and  `WorkerClient.set()` methods. Both of these methods are asynchronous and take a lambda expression as the first argument which returns the targeted property. Again, data that sent to the worker through the set operation, and returned from the worker through the get operation is serialized. Therefore, classes that have methods should generally be avoided. A `shallowTransfer` option can be provided as optional parameter to the decorator which transfers the prototype of the object or class that is sent to, or recieved from a worker. This allows the methods of the class/object to be copied, however, it is more of an experimental feature as it does have limitations which are discussed in more detail further below.
+When a worker property is decorated with `@Accessible()` that property can be accessed by a client through the `WorkerClient.get()` and `WorkerClient.set()` methods. Both of these methods are asynchronous and take a lambda expression as the first argument which returns the targeted property. Again, data that sent to the worker through the set operation, and returned from the worker through the get operation is serialized. Therefore, classes that have methods should generally be avoided. A `shallowTransfer` option can be provided as optional parameter to the decorator which transfers the prototype of the object or class that is sent to, or recieved from a worker. This allows the methods of the class/object to be copied, however, it is more of an experimental feature as it does have limitations which are discussed in more detail further below.
 
-*app.worker.ts*
+_app.worker.ts_
+
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Accessable } from 'angular-web-worker';
+import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Accessible } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
+  @Accessible() names: string[];
 
-    @Accessable() names: string[];
+  constructor() {}
 
-    constructor() {}
-
-    onWorkerInit() {
-        this.names = ['Joe', 'Peter', 'Mary'];
-    }
-
+  onWorkerInit() {
+    this.names = ['Joe', 'Peter', 'Mary'];
+  }
 }
 bootstrapWorker(AppWorker);
 ```
 
-*app.component.ts*
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -245,48 +251,48 @@ export class AppComponent implements OnInit {
 }
 ```
 
-**Decorator Options:** *all options are optional*
+**Decorator Options:** _all options are optional_
 
-| Name            | Description                               | Type      | Default |
-| --------------- | ----------------------------------------- | --------- | ------: |
-| get             | whether `WorkerClient.get()` can be used  | boolean   | true    |
-| set             | whether `WorkerClient.set()` can be used  | boolean   | true    |
-| shallowTransfer | if the prototype is copied                | boolean   | false   |
+| Name            | Description                              | Type    | Default |
+| --------------- | ---------------------------------------- | ------- | ------: |
+| get             | whether `WorkerClient.get()` can be used | boolean |    true |
+| set             | whether `WorkerClient.set()` can be used | boolean |    true |
+| shallowTransfer | if the prototype is copied               | boolean |   false |
 
-*Example*
+_Example_
+
 ```typescript
-@Accessable({get: true, set: false, shallowTransfer: true}) names: string[];
+@Accessible({get: true, set: false, shallowTransfer: true}) names: string[];
 ```
 
 ## Calling Worker Methods
 
-When a worker method is decorated with `@Callable()` that method can be called with `WorkerClient.call()`. This is an asynchronous method that only resolves once the decorated method has completed. If the decorated method is also asynchrounous it will only resolve once that method has resolved. The `WorkerClient.call()` method only takes one argument which is a lamdba function that calls the targeted method. Similiar to the `@Accessable()` decorator, all data is serialized which applies to both the function arguments as well as the returned value. A `shallowTransfer` option can also passed into the decorator, however this only applies to the value returned by the decorated method. A seperate parameter decorator `@ShallowTransfer()` can be used on the method arguments. Read further below for more on the `shallowTransfer` feature.
+When a worker method is decorated with `@Callable()` that method can be called with `WorkerClient.call()`. This is an asynchronous method that only resolves once the decorated method has completed. If the decorated method is also asynchronous it will only resolve once that method has resolved. The `WorkerClient.call()` method only takes one argument which is a lambda function that calls the targeted method. Similar to the `@Accessible()` decorator, all data is serialized which applies to both the function arguments as well as the returned value. A `shallowTransfer` option can also passed into the decorator, however this only applies to the value returned by the decorated method. A separate parameter decorator `@ShallowTransfer()` can be used on the method arguments. Read further below for more on the `shallowTransfer` feature.
 
-*app.worker.ts*
+_app.worker.ts_
+
 ```typescript
 import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Callable } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
+  constructor() {}
 
-  constructor() { }
-
-  onWorkerInit() {
-  }
+  onWorkerInit() {}
 
   @Callable()
   async doSomeWork(value1: string, value2: number): Promise<string> {
     // execute some async code
-    // this method can also be synchrounous
+    // this method can also be synchronous
     return `${value1}-${value2 * 2}`;
   }
-
 }
 bootstrapWorker(AppWorker);
 ```
 
-*app.component.ts*
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -316,13 +322,15 @@ export class AppComponent implements OnInit {
 
 }
 ```
-**Decorator Options:** *all options are optional*
 
-| Name            | Description                                       | Type      | Default |
-| --------------- | ------------------------------------------------- | --------- | ------: |
-| shallowTransfer | if the prototype of the returned value is copied  | boolean   | false   |
+**Decorator Options:** _all options are optional_
 
-*Example*
+| Name            | Description                                      | Type    | Default |
+| --------------- | ------------------------------------------------ | ------- | ------: |
+| shallowTransfer | if the prototype of the returned value is copied | boolean |   false |
+
+_Example_
+
 ```typescript
 @Callable({shallowTransfer: true})
 doSomeWork(): MyClassWithMethods {
@@ -332,15 +340,16 @@ doSomeWork(): MyClassWithMethods {
 
 ## Subscribing to Worker Events
 
-When a RxJS subject property in a worker is decorated with `@Subscribable()` a client can create a subscription to the observable with `WorkerClient.subscribe()`. All types of multicasted RxJS observables are supported being a `Subject`,  `BehaviorSubject`, `ReplaySubject` or `AsyncSubject`. The subscribe method has two required arguments, the first is a lambda expression returning the targeted subject and the second is the `next` callback. There are two optional arguments being the `onerror` and `complete` callbacks for the subscription. Again, any data that sent from the worker to the client is serialized. 
+When a RxJS subject property in a worker is decorated with `@Subscribable()` a client can create a subscription to the observable with `WorkerClient.subscribe()`. All types of multicasted RxJS observables are supported being a `Subject`, `BehaviorSubject`, `ReplaySubject` or `AsyncSubject`. The subscribe method has two required arguments, the first is a lambda expression returning the targeted subject and the second is the `next` callback. There are two optional arguments being the `onerror` and `complete` callbacks for the subscription. Again, any data that sent from the worker to the client is serialized.
 
 **UNSUBSCRIBING**
 
-The client's subscribe method returns a promise with the subsription, which can be unsubscribed from before the worker is terminated. However, it is not advisable to unsubscribe from the subscription with the normal `Subscription.unsubscribe()` approach. This is because two subscriptions are actually created, one within the Angular app and one within the worker script. Therefore, in order to release resources within the worker the `WorkerClient.unsubscribe(subscription)` method should be used.
+The client's subscribe method returns a promise with the subscription, which can be unsubscribed from before the worker is terminated. However, it is not advisable to unsubscribe from the subscription with the normal `Subscription.unsubscribe()` approach. This is because two subscriptions are actually created, one within the Angular app and one within the worker script. Therefore, in order to release resources within the worker the `WorkerClient.unsubscribe(subscription)` method should be used.
 
 If there is no need to unsubscribe from the subscription before the worker is terminated, simply terminating the worker with the `WorkerClient.destroy()` method will properly dispose of the subscriptions.
 
-*app.worker.ts*
+_app.worker.ts_
+
 ```typescript
 import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Subscribable } from 'angular-web-worker';
 import { BehaviorSubject } from 'rxjs';
@@ -348,20 +357,19 @@ import { BehaviorSubject } from 'rxjs';
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
-
   @Subscribable() event: BehaviorSubject<number>;
 
   constructor() {}
 
   onWorkerInit() {
-      this.event = new BehaviorSubject<number>(100);
+    this.event = new BehaviorSubject<number>(100);
   }
-
 }
 bootstrapWorker(AppWorker);
 ```
 
-*app.component.ts*
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -388,7 +396,7 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.client.connect();
     this.subscription = await this.client.subscribe(w => w.event,
       (no) => { console.log(no); },
-      // optional 
+      // optional
       (err) => { console.log(err); },
       () => { console.log('Done'); }
     );
@@ -408,33 +416,33 @@ export class AppComponent implements OnInit, OnDestroy {
 
 ## Creating Observables from Worker Events
 
-Similiar to subscribing to a worker event, a client can also create an RxJS observable from an event subject decorated with `@Subscribable()`. This is through the `WorkerClient.observe()` method, which returns a promise of the observable and takes one argument being the a lambda expression that returns the targeted event subject. 
+Similar to subscribing to a worker event, a client can also create an RxJS observable from an event subject decorated with `@Subscribable()`. This is through the `WorkerClient.observe()` method, which returns a promise of the observable and takes one argument being the a lambda expression that returns the targeted event subject.
 
 **UNSUBSCRIBING**
 
 Typically there is no need to unsubscribe when only using observables, however if there is no need to retain an observable created from `WorkerClient.observe()` until worker is terminated then `WorkerClient.unsubscribe(observable)` method should be used to release resources within the worker.
 
-*app.worker.ts*
+_app.worker.ts_
+
 ```typescript
 import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Subscribable } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
+  @Subscribable() event: BehaviorSubject<string[]>;
 
-    @Subscribable() event: BehaviorSubject<string[]>;
+  constructor() {}
 
-    constructor() {}
-
-    onWorkerInit() {
-        this.event = new BehaviorSubject<string[]>(['value1','value2']);
-    }
-
+  onWorkerInit() {
+    this.event = new BehaviorSubject<string[]>(['value1', 'value2']);
+  }
 }
 bootstrapWorker(AppWorker);
 ```
 
-*app.component.ts*
+_app.component.ts_
+
 ```typescript
 import { AppWorker } from './app.worker';
 import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
@@ -474,6 +482,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 }
 ```
+
 ## Terminating a Worker
 
 A worker script will remain active in the browser until the `WorkerClient.destroy()` method is called so it is important ensure that the worker is properly disposed of before an Angular component/directive is destroyed.
@@ -489,95 +498,96 @@ ngOnDestroy() {
 The shallow transfer feature allows the prototype of the data sent to, or recieved from a worker to be copied after the data has been serialized. It can be used to copy the functions from a class, but it does have limitations as it will only copy the prototype class and will not copy the prototypes for any of its properties. Likewise for arrays, the array prototype is already natively detected by the browser so the use of the shallow transfer feature will have no effect as it will have no impact on the elements of the array.
 
 **USAGE**
-- `@Accessable({shallowTransfer: true})` - applies to both get and set operations
+
+- `@Accessible({shallowTransfer: true})` - applies to both get and set operations
 - `@Callable({shallowTransfer: true})` - applies to the value returned by the decorated function
 - `@ShallowTransfer()` - decorator for arguments in a method decorated with @Callable()
 
-*person.ts*
+_person.ts_
+
 ```typescript
 class Person {
+  name: string;
+  age: number;
+  spouse: Person;
 
-    name: string;
-    age: number;
-    spouse: Person;
+  constructor() {}
 
-    constructor() {}
-    
-    birthday() {
-        this.age++;
-    }
+  birthday() {
+    this.age++;
+  }
 }
 ```
-*app.worker.ts*
+
+_app.worker.ts_
+
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Callable, ShallowTransfer } from 'angular-web-worker';
+import {
+  AngularWebWorker,
+  bootstrapWorker,
+  OnWorkerInit,
+  Callable,
+  ShallowTransfer,
+} from 'angular-web-worker';
 /// <reference lib="webworker" />
 
 @AngularWebWorker()
 export class AppWorker implements OnWorkerInit {
-
-    @Callable()
-    doSomethingWithPerson(@ShallowTransfer() person: Person) {
-        // ok
-        person.birthday();
-        // will throw error
-        person.spouse.birthday();
-    }
-
+  @Callable()
+  doSomethingWithPerson(@ShallowTransfer() person: Person) {
+    // ok
+    person.birthday();
+    // will throw error
+    person.spouse.birthday();
+  }
 }
 ```
+
 # Testing
 
-The library provides a set of utilities for writing unit tests. The testing utilities essentially run the worker within the application's "thread" and mock the serialization behaviour that occurs when messages are sent to, or recieved from the worker. This ensures that your code will work as expected when running in a seperate worker script. 
+The library provides a set of utilities for writing unit tests. The testing utilities essentially run the worker within the application's "thread" and mock the serialization behavior that occurs when messages are sent to, or recieved from the worker. This ensures that your code will work as expected when running in a separate worker script.
 
 ## Testing the Worker Class
 
 When testing the worker class, all decorated methods and/or properties should be called/accessed through the `WorkerTestingClient` to mock the actual interaction with that class. A test client is an extension of the `WorkerClient` and exposes the underlying worker through an additional `workerInstance` property. This allows other functionality within the worker class to be tested/mocked directly.
 
-*app.worker.spec.ts*
+_app.worker.spec.ts_
+
 ```typescript
 import { createTestClient, WorkerTestingClient } from 'angular-web-worker/testing';
 import { AppWorker } from './app.worker';
 
 describe('AppWorker', () => {
+  let client: WorkerTestingClient<AppWorker>;
 
-    let client: WorkerTestingClient<AppWorker>;
+  beforeEach(async () => {
+    client = createTestClient(AppWorker);
+    await client.connect();
+  });
 
-    beforeEach(async () => {
-        client = createTestClient(AppWorker);
-        await client.connect();
-    });
-
-    it('Should call doSomethingElse', async () => {
-        const spy = spyOn(client.workerInstance, 'doSomethingElse')
-        await client.call(w => w.doSomething())
-        expect(spy).toHaveBeenCalled();
-    });
-
+  it('Should call doSomethingElse', async () => {
+    const spy = spyOn(client.workerInstance, 'doSomethingElse');
+    await client.call((w) => w.doSomething());
+    expect(spy).toHaveBeenCalled();
+  });
 });
-
 ```
 
 ## The Worker Testing Module
 
-When testing the usage of the injectable `WorkerManager` service within an Angular app, the `WorkerTestingModule` should be imported in place of the `WorkerModule`. It's usage is slightly different in that the path to the worker class is not provided in `WorkerTestingModule.forWorkers` as there is no need to generate seperate worker scripts. The testing module will then return a  `WorkerTestingClient` when ever the `WorkerManager.createClient()` method is called
+When testing the usage of the injectable `WorkerManager` service within an Angular app, the `WorkerTestingModule` should be imported in place of the `WorkerModule`. It's usage is slightly different in that the path to the worker class is not provided in `WorkerTestingModule.forWorkers` as there is no need to generate separate worker scripts. The testing module will then return a `WorkerTestingClient` when ever the `WorkerManager.createClient()` method is called
 
-*app.component.spec.ts*
+_app.component.spec.ts_
+
 ```typescript
 import { WorkerTestingModule } from 'angular-web-worker/testing';
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [
-        RouterTestingModule,
-        WorkerTestingModule.forWorkers([AppWorker])
-      ],
-      declarations: [
-        AppComponent,
-      ],
+      imports: [RouterTestingModule, WorkerTestingModule.forWorkers([AppWorker])],
+      declarations: [AppComponent],
     }).compileComponents();
   }));
 });
-
 ```

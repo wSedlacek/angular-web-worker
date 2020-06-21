@@ -1,4 +1,12 @@
-import { WorkerUtils, ObservablesOnly, SubscribableMetaData, WorkerAnnotations, WorkerConfig, SecretResult, WorkerEvents } from 'angular-web-worker/common';
+import {
+  WorkerUtils,
+  ObservablesOnly,
+  SubscribableMetaData,
+  WorkerAnnotations,
+  WorkerConfig,
+  SecretResult,
+  WorkerEvents,
+} from 'angular-web-worker/common';
 import 'reflect-metadata';
 
 /**
@@ -8,10 +16,12 @@ import 'reflect-metadata';
  * @Serialized When data is transferred through `Subject.next()`, functions will not be copied and circular referencing structures will cause errors
  */
 export function Subscribable() {
-    return function <T, Tkey extends keyof ObservablesOnly<T>>(target: T, propertyKey: Tkey) {
-        WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.Observables, <SubscribableMetaData>{
-            name: propertyKey,
-            type: Reflect.getMetadata('design:type', target, <string>propertyKey)
-        });
-    };
+  return function <T, Tkey extends keyof ObservablesOnly<T>>(target: T, propertyKey: Tkey) {
+    WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.Observables, <
+      SubscribableMetaData
+    >{
+      name: propertyKey,
+      type: Reflect.getMetadata('design:type', target, <string>propertyKey),
+    });
+  };
 }
