@@ -43,7 +43,7 @@ module.exports = function (config) {
       },
     },
     port: 9867,
-    browsers: ['chrome'],
+    browsers: ['Chrome'],
     logLevel: config.LOG_INFO,
     colors: true,
     client: {
