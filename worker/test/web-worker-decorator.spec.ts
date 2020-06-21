@@ -1,4 +1,4 @@
-import { AngularWebWorker, Accessible, WorkerFactoryFunctions } from '../src/public-api';
+import { WebWorker, Accessible, WorkerFactoryFunctions } from '../src/public-api';
 import {
   WorkerAnnotations,
   WorkerConfig,
@@ -8,7 +8,7 @@ import {
 import { Subscribable } from '../src/public-api';
 import { Subject } from 'rxjs';
 
-@AngularWebWorker()
+@WebWorker()
 class WorkerTestClass {
   name: string;
   constructor() {
@@ -16,7 +16,7 @@ class WorkerTestClass {
   }
 }
 
-describe('@AngularWebWorker(): [angular-web-worker]', () => {
+describe('@WebWorker(): [angular-web-worker]', () => {
   it('Should attach metadata', () => {
     expect(WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.IsWorker]).toEqual(true);
   });

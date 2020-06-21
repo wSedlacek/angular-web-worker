@@ -1,7 +1,7 @@
 import { Observable, BehaviorSubject, Subject, AsyncSubject, ReplaySubject } from 'rxjs';
 
 /**
- * A type interface to specify the prototype of any class that can be used as a web worker when decorated with `@AngularWebWorker()`
+ * A type interface to specify the prototype of any class that can be used as a web worker when decorated with `@WebWorker()`
  */
 export type WebWorkerType<T> = new (...args: any[]) => T;
 

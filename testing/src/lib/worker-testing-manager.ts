@@ -1,4 +1,4 @@
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 import { WebWorkerType } from 'angular-web-worker/common';
 import { WorkerTestingClient } from './worker-testing-client';
 

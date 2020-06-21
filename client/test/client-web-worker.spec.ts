@@ -1,11 +1,11 @@
 import { ClientWebWorker } from './../src/public-api';
-import { AngularWebWorker, WorkerController } from '../../worker/src/public-api';
+import { WebWorker, WorkerController } from '../../worker/src/public-api';
 import { WorkerEvents } from 'angular-web-worker/common';
 
-@AngularWebWorker()
+@WebWorker()
 export class TestClass {}
 
-describe('ClientWebWorker: [angular-web-worker/angular]', () => {
+describe('ClientWebWorker: [angular-web-worker/client]', () => {
   let worker: ClientWebWorker<TestClass>;
   beforeEach(() => {
     worker = new ClientWebWorker(TestClass, true);

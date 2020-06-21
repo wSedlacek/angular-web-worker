@@ -28,7 +28,7 @@ export class WorkerModule {
     workerDefinitions.forEach((definition) => {
       if (!WorkerUtils.getAnnotation(definition.worker, WorkerAnnotations.IsWorker)) {
         throw new Error(
-          'WorkerModule: one or more of the provided workers has not been decorated with the @AngularWebWorker decorator'
+          'WorkerModule: one or more of the provided workers has not been decorated with the @WebWorker decorator'
         );
       }
     });
@@ -45,7 +45,7 @@ export class WorkerModule {
  */
 export interface WorkerDefinition {
   /**
-   * the worker class which has been decorated with `@AngularWebWorker()`
+   * the worker class which has been decorated with `@WebWorker()`
    */
   worker: WebWorkerType<any>;
   /**

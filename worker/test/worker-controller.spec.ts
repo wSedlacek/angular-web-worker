@@ -1,5 +1,5 @@
 import {
-  AngularWebWorker,
+  WebWorker,
   WorkerController,
   Callable,
   ShallowTransfer,
@@ -36,7 +36,7 @@ class TestUser {
   }
 }
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass implements OnWorkerInit {
   @Accessible() setTestProp: number;
   @Accessible() getTestProp: string = 'testvalue';

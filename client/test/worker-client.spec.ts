@@ -1,5 +1,5 @@
 import {
-  AngularWebWorker,
+  WebWorker,
   Accessible,
   OnWorkerInit,
   Callable,
@@ -101,7 +101,7 @@ const PrivateClientUtils: PrivateWorkerClient = {
   },
 };
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass implements OnWorkerInit {
   undecoratedProperty: string;
   @Accessible() property1: string;
@@ -143,7 +143,7 @@ class FakeWorker implements Worker {
   terminate() {}
 }
 
-describe('WorkerClient: [angular-web-worker/angular]', () => {
+describe('WorkerClient: [angular-web-worker/client]', () => {
   function merge<T>(defaultOptions: T, newOptions: Partial<T>): T {
     const opts: any = {};
     for (const key in defaultOptions) {

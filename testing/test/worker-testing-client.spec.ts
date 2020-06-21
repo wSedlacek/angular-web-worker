@@ -1,7 +1,7 @@
-import { AngularWebWorker } from '../../worker/src/public-api';
+import { WebWorker } from '../../worker/src/public-api';
 import { WorkerTestingClient, createTestClient } from 'testing/src/public-api';
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass {
   property: string = 'propertyvalue';
 }

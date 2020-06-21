@@ -1,4 +1,4 @@
-import { WorkerClient, WorkerDefinition, ClientWebWorker } from 'angular-web-worker/angular';
+import { WorkerClient, WorkerDefinition, ClientWebWorker } from 'angular-web-worker/client';
 import { WebWorkerType, WorkerUtils, WorkerAnnotations } from 'angular-web-worker/common';
 
 /**
@@ -31,9 +31,7 @@ export class WorkerTestingClient<T> extends WorkerClient<T> {
  */
 export function createTestClient<T>(workerClass: WebWorkerType<T>): WorkerTestingClient<T> {
   if (!WorkerUtils.getAnnotation(workerClass, WorkerAnnotations.IsWorker)) {
-    throw new Error(
-      'createTestClient: the provided class must be decorated with @AngularWebWorker()'
-    );
+    throw new Error('createTestClient: the provided class must be decorated with @WebWorker()');
   } else {
     return new WorkerTestingClient({ worker: workerClass, initFn: () => null });
   }

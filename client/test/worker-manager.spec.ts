@@ -1,17 +1,17 @@
 import { WorkerManager, WorkerDefinition, WorkerClient } from './../src/public-api';
-import { AngularWebWorker } from './../../worker/src/public-api';
+import { WebWorker } from './../../worker/src/public-api';
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass {
   name: string = 'random';
 }
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass2 {
   name: string = 'random22';
 }
 
-describe('WorkerManager: [angular-web-worker/angular]', () => {
+describe('WorkerManager: [angular-web-worker/client]', () => {
   let manager: WorkerManager;
   function privateWorkerDefinition(client: WorkerClient<any>): WorkerDefinition {
     return client['definition'];

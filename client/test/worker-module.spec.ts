@@ -1,4 +1,4 @@
-import { AngularWebWorker } from './../../worker/src/public-api';
+import { WebWorker } from './../../worker/src/public-api';
 import { WorkerModule, WorkerManager } from './../src/public-api';
 import { TestBed } from '@angular/core/testing';
 import {
@@ -6,12 +6,12 @@ import {
   BrowserDynamicTestingModule,
 } from '@angular/platform-browser-dynamic/testing';
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass {}
 
 class UndecoratedTestClass {}
 
-describe('WorkerModule: [angular-web-worker/angular]', () => {
+describe('WorkerModule: [angular-web-worker/client]', () => {
   beforeEach(async () => {
     TestBed.resetTestEnvironment();
     TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());

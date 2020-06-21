@@ -1,13 +1,13 @@
 import { WorkerTestingManager, createTestManager } from '../src/lib/worker-testing-manager';
 import { WorkerTestingClient } from 'testing/src/public-api';
-import { AngularWebWorker } from '../../worker/src/lib/web-worker-decorator';
+import { WebWorker } from '../../worker/src/lib/web-worker-decorator';
 
-@AngularWebWorker()
+@WebWorker()
 class TestClass {
   property: string = 'propertyvalue';
 }
 
-@AngularWebWorker()
+@WebWorker()
 class UndecoratedClass {}
 
 describe('WorkerTestingManager: [angular-web-worker/testing]', () => {

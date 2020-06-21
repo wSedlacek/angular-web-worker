@@ -17,10 +17,10 @@ An Angular library providing an easier way to work web workers in an Angular app
 _app.worker.ts_
 
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit } from 'angular-web-worker';
+import { WebWorker, bootstrapWorker, OnWorkerInit } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   constructor() {}
 
@@ -43,7 +43,7 @@ Once a new worker class has been created, a definition of the worker must be imp
 _app.module.ts_
 
 ```typescript
-import { WorkerModule } from 'angular-web-worker/angular';
+import { WorkerModule } from 'angular-web-worker/client';
 import { AppWorker } from './app.worker';
 
 @NgModule({
@@ -68,7 +68,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -106,11 +106,11 @@ Any logic or initialization of variables in the constructor of the worker class 
 _app.worker.ts_
 
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit } from 'angular-web-worker';
+import { WebWorker, bootstrapWorker, OnWorkerInit } from 'angular-web-worker';
 import { Subject } from 'rxjs';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   private event: Subject<any>;
   private data: any;
@@ -131,7 +131,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -166,7 +166,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -202,10 +202,10 @@ When a worker property is decorated with `@Accessible()` that property can be ac
 _app.worker.ts_
 
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Accessible } from 'angular-web-worker';
+import { WebWorker, bootstrapWorker, OnWorkerInit, Accessible } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   @Accessible() names: string[];
 
@@ -222,7 +222,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -272,10 +272,10 @@ When a worker method is decorated with `@Callable()` that method can be called w
 _app.worker.ts_
 
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Callable } from 'angular-web-worker';
+import { WebWorker, bootstrapWorker, OnWorkerInit, Callable } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   constructor() {}
 
@@ -295,7 +295,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -351,11 +351,11 @@ If there is no need to unsubscribe from the subscription before the worker is te
 _app.worker.ts_
 
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Subscribable } from 'angular-web-worker';
+import { WebWorker, bootstrapWorker, OnWorkerInit, Subscribable } from 'angular-web-worker';
 import { BehaviorSubject } from 'rxjs';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   @Subscribable() event: BehaviorSubject<number>;
 
@@ -372,7 +372,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -425,10 +425,10 @@ Typically there is no need to unsubscribe when only using observables, however i
 _app.worker.ts_
 
 ```typescript
-import { AngularWebWorker, bootstrapWorker, OnWorkerInit, Subscribable } from 'angular-web-worker';
+import { WebWorker, bootstrapWorker, OnWorkerInit, Subscribable } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   @Subscribable() event: BehaviorSubject<string[]>;
 
@@ -445,7 +445,7 @@ _app.component.ts_
 
 ```typescript
 import { AppWorker } from './app.worker';
-import { WorkerManager, WorkerClient } from 'angular-web-worker/angular';
+import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
 
 @Component({
    ...
@@ -523,7 +523,7 @@ _app.worker.ts_
 
 ```typescript
 import {
-  AngularWebWorker,
+  WebWorker,
   bootstrapWorker,
   OnWorkerInit,
   Callable,
@@ -531,7 +531,7 @@ import {
 } from 'angular-web-worker';
 /// <reference lib="webworker" />
 
-@AngularWebWorker()
+@WebWorker()
 export class AppWorker implements OnWorkerInit {
   @Callable()
   doSomethingWithPerson(@ShallowTransfer() person: Person) {

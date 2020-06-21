@@ -142,7 +142,7 @@ export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
 /**
  * Class decorator allowing the class to be bootstrapped into a web worker script, and allowing communication with a `WorkerClient`
  */
-export function AngularWebWorker() {
+export function WebWorker() {
   return function (target: any) {
     WorkerUtils.setAnnotation(target, WorkerAnnotations.IsWorker, true);
     WorkerUtils.setAnnotation(target, WorkerAnnotations.Factory, function create(
