@@ -1,0 +1,38 @@
+{
+  "npmScope": "angular-web-worker",
+  "implicitDependencies": {
+    "angular.json": "*",
+    "package.json": {
+      "dependencies": "*",
+      "devDependencies": "*"
+    },
+    "tsconfig.json": "*",
+    "tslint.json": "*",
+    "nx.json": "*"
+  },
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "@nrwl/nx-cloud",
+      "options": {
+        "accessToken": "ZmU0OGViYjEtNjE4MC00MjdmLWJkNGEtOWY1MDZiYTM3OGQ3fHJlYWQtd3JpdGU=",
+        "cacheableOperations": ["build", "test", "lint", "e2e"],
+        "canTrackAnalytics": false,
+        "showUsageWarnings": true
+      }
+    }
+  },
+  "projects": {
+    "client": {
+      "tags": []
+    },
+    "common": {
+      "tags": []
+    },
+    "worker": {
+      "tags": []
+    },
+    "testing": {
+      "tags": []
+    }
+  }
+}

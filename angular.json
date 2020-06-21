@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "projects": {
+    "client": {
+      "projectType": "library",
+      "root": "libs/client",
+      "sourceRoot": "libs/client/src",
+      "prefix": "angular-web-worker",
+      "architect": {
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": ["libs/client/tsconfig.lib.json", "libs/client/tsconfig.spec.json"],
+            "exclude": ["**/node_modules/**", "!libs/client/**/*"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "options": {
+            "jestConfig": "libs/client/jest.config.js",
+            "tsConfig": "libs/client/tsconfig.spec.json",
+            "passWithNoTests": true,
+            "setupFile": "libs/client/src/test-setup.ts"
+          }
+        }
+      },
+      "schematics": {}
+    },
+    "common": {
+      "root": "libs/common",
+      "sourceRoot": "libs/common/src",
+      "projectType": "library",
+      "schematics": {},
+      "architect": {
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": ["libs/common/tsconfig.lib.json", "libs/common/tsconfig.spec.json"],
+            "exclude": ["**/node_modules/**", "!libs/common/**/*"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "options": {
+            "jestConfig": "libs/common/jest.config.js",
+            "tsConfig": "libs/common/tsconfig.spec.json",
+            "passWithNoTests": true,
+            "setupFile": "libs/common/src/test-setup.ts"
+          }
+        }
+      }
+    },
+    "worker": {
+      "root": "libs/worker",
+      "sourceRoot": "libs/worker/src",
+      "projectType": "library",
+      "schematics": {},
+      "architect": {
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": ["libs/worker/tsconfig.lib.json", "libs/worker/tsconfig.spec.json"],
+            "exclude": ["**/node_modules/**", "!libs/worker/**/*"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "options": {
+            "jestConfig": "libs/worker/jest.config.js",
+            "tsConfig": "libs/worker/tsconfig.spec.json",
+            "passWithNoTests": true,
+            "setupFile": "libs/worker/src/test-setup.ts"
+          }
+        }
+      }
+    },
+    "testing": {
+      "projectType": "library",
+      "root": "libs/testing",
+      "sourceRoot": "libs/testing/src",
+      "prefix": "angular-web-worker",
+      "architect": {
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": ["libs/testing/tsconfig.lib.json", "libs/testing/tsconfig.spec.json"],
+            "exclude": ["**/node_modules/**", "!libs/testing/**/*"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "options": {
+            "jestConfig": "libs/testing/jest.config.js",
+            "tsConfig": "libs/testing/tsconfig.spec.json",
+            "passWithNoTests": true,
+            "setupFile": "libs/testing/src/test-setup.ts"
+          }
+        }
+      },
+      "schematics": {}
+    }
+  },
+  "cli": {
+    "defaultCollection": "@nrwl/workspace"
+  }
+}
