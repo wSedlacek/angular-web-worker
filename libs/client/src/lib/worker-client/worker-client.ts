@@ -1,4 +1,3 @@
-import { Subject, Subscription, Observable } from 'rxjs';
 import {
   ClientWebWorker,
   WorkerClientObservablesDict,
@@ -6,22 +5,23 @@ import {
   WorkerDefinition,
 } from 'angular-web-worker/client';
 import {
-  WorkerResponseEvent,
-  WorkerEvents,
-  WorkerUtils,
-  WorkerAnnotations,
-  NonObservablesOnly,
   AccessibleMetaData,
-  FunctionsOnly,
   CallableMetaData,
+  FunctionsOnly,
+  NonObservablesOnly,
   ObservablesOnly,
-  WorkerObservableType,
-  WorkerRequestEvent,
   SecretResult,
+  WorkerAnnotations,
   WorkerEvent,
+  WorkerEvents,
   WorkerObservableMessage,
   WorkerObservableMessageTypes,
+  WorkerObservableType,
+  WorkerRequestEvent,
+  WorkerResponseEvent,
+  WorkerUtils,
 } from 'angular-web-worker/common';
+import { Observable, Subject, Subscription } from 'rxjs';
 
 /**
  * Provides functionality for an Angular app to access the properties, call the methods and subscribe to the events in a web worker by managing
@@ -32,11 +32,11 @@ export class WorkerClient<T> {
   /**
    * Reference to the browser's worker class for posting messages and terminating the worker
    */
-  private workerRef: Worker | ClientWebWorker<T>;
+  private workerRef?: Worker | ClientWebWorker<T> | null;
   /**
    * The client instance of the worker class
    */
-  private worker: T;
+  private worker: T | null = null;
   /**
    * A secret key that must be returned when decorated properties and/or methods are called from the client instance of the worker class
    */
@@ -44,27 +44,20 @@ export class WorkerClient<T> {
   /**
    * Array of secret keys containing the `workerSecret` and `WorkerRequestEvent.requestSecret`s ensuring that there are never two of the same keys at any point in time
    */
-  private secrets: string[];
+  private secrets: string[] = [];
   /**
    * An event subject that is triggered each time a response is recieved from a `WorkerController`. This is subscribed to immediately before any request is made in the `sendRequest()` method.
    * This allows the `Worker.onmessage` listener to be mapped back to an async function call from where the request originated
    */
-  private responseEvent: Subject<
-    WorkerResponseEvent<
-      | WorkerEvents.Callable
-      | WorkerEvents.Accessible
-      | WorkerEvents.Observable
-      | WorkerEvents.ObservableMessage
-    >
-  >;
+  private responseEvent?: Subject<WorkerResponseEvent<WorkerEvents.Callable>>;
   /**
    * A dictionary of observable references that listen for events triggered by the worker after they have been subscribed or observed through the use of either the `subscribe()` or `observe` methods
    */
-  private observables: WorkerClientObservablesDict;
+  private observables: WorkerClientObservablesDict = {};
   /**
    * Whether the worker is active after it is created with the `connect()` method and before it has been terminated by the `destroy()` method
    */
-  private _isConnected: boolean;
+  private _isConnected = false;
 
   /**
    * Creates a new `WorkerClient`
@@ -73,9 +66,9 @@ export class WorkerClient<T> {
    * @param runInApp whether the client is used for unit testing which determines if serialization should be mocked
    */
   constructor(
-    private definition: WorkerDefinition,
-    private runInApp: boolean = false,
-    private isTestClient: boolean = false
+    private readonly definition: WorkerDefinition,
+    private readonly runInApp: boolean = false,
+    private readonly isTestClient: boolean = false
   ) {}
 
   /**
@@ -84,32 +77,32 @@ export class WorkerClient<T> {
    *
    * This method must called before any worker methods and/or properties can be called/accessed
    */
-  connect(): Promise<void> {
+  public async connect(): Promise<void> {
     if (!this._isConnected) {
       this.secrets = [];
       this.workerSecret = this.generateSecretKey();
       this.worker = WorkerUtils.getAnnotation<Function>(
         this.definition.worker,
         WorkerAnnotations.Factory
-      )({
+      )?.({
         isClient: true,
         clientSecret: this.workerSecret,
       });
 
-      if (!this.runInApp) {
-        this.workerRef = this.definition.initFn();
-      } else {
-        this.workerRef = new ClientWebWorker(this.definition.worker, this.isTestClient);
-      }
+      this.workerRef = !this.runInApp
+        ? this.definition.initFn?.()
+        : new ClientWebWorker(this.definition.worker, this.isTestClient);
+
       this.registerEvents();
 
-      return this.castPromise<void>(
+      return this.castPromise(
         this.sendRequest(WorkerEvents.Init, {
           body: () => null,
           isConnect: true,
           resolve: () => {
             this._isConnected = true;
-            return undefined;
+
+            return;
           },
           secretError: 'Could not initialize worker',
         })
@@ -120,14 +113,12 @@ export class WorkerClient<T> {
   /**
    * Terminates the worker and unsubscribes from any subscriptions created from the `subscribe()` method
    */
-  destroy(): void {
+  public destroy(): void {
     if (this.isConnected) {
-      for (const key in this.observables) {
-        if (this.observables[key]) {
-          this.removeSubscription(key);
-        }
+      for (const key of Object.keys(this.observables)) {
+        this.removeSubscription(key);
       }
-      this.workerRef.terminate();
+      this.workerRef?.terminate();
       this.secrets = [];
       this.observables = {};
       this.worker = null;
@@ -158,17 +149,19 @@ export class WorkerClient<T> {
    * @param property A lambda expression that returns the targeted property of the worker. The worker argument in the expression only has the properties owned by the worker class (no methods)
    * and only those properties that are not RxJS subjects
    */
-  get<PropertyType>(
+  public async get<PropertyType>(
     property: (workerProperties: NonObservablesOnly<T>) => PropertyType
-  ): Promise<PropertyType> {
+  ): Promise<PropertyType extends Promise<any> ? PropertyType : Promise<PropertyType>> {
     return this.sendRequest(WorkerEvents.Accessible, {
       workerProperty: property,
       additionalConditions: [
         {
-          if: (secret) => secret.body.get,
+          if: (secret) => !!secret?.body.get,
           reject: (secret) =>
             new Error(
-              `WorkerClient: will not apply the get method to the "${secret.propertyName}" property because the get accessor has been explicity set to false`
+              `WorkerClient: will not apply the get method to the "${String(
+                secret?.propertyName
+              )}" property because the get accessor has been explicity set to false`
             ),
         },
       ],
@@ -181,57 +174,56 @@ export class WorkerClient<T> {
         const metaData = WorkerUtils.getAnnotation<AccessibleMetaData[]>(
           this.definition.worker,
           WorkerAnnotations.Accessibles
-        ).filter((x) => x.name === resp.propertyName)[0];
-        if (metaData.shallowTransfer) {
-          if (metaData.type) {
-            if (metaData.type.prototype && resp.result) {
-              resp.result.__proto__ = metaData.type.prototype;
-            }
-          }
+        ).find((x) => x.name === resp?.propertyName);
+
+        if (metaData?.shallowTransfer && metaData.type.prototype && resp?.result) {
+          resp.result.__proto__ = metaData.type.prototype;
         }
-        return resp.result;
+
+        return resp?.result;
       },
     });
   }
 
   /**
-     * Sets value of a worker property that has been decorated with `@Accessible()`. Undecorated properties will cause the promise to be rejected
-     * @Serialized
-
-     * @example
-     * // async await syntax ---
-     * await client.set(w => w.name, 'peter');
-     *
-     * // promise syntax ---
-     * client.set(w => w.name, 'peter').then(() => {
-     *   console.log('property has been set');
-     * }).catch((err) => {
-     *   console.log(err);
-     * });
-     * @param property A lambda expression that returns the targeted property of the worker. The worker argument in the expression only has the properties owned by the worker class (no methods)
-     * and only those properties that are not RxJS subjects
-     * @param value the value which the property should be set to
-     */
-  set<PropertyType>(
+   * Sets value of a worker property that has been decorated with `@Accessible()`. Undecorated properties will cause the promise to be rejected
+   * @Serialized
+   * @example
+   * // async await syntax ---
+   * await client.set(w => w.name, 'peter');
+   *
+   * // promise syntax ---
+   * client.set(w => w.name, 'peter').then(() => {
+   *   console.log('property has been set');
+   * }).catch((err) => {
+   *   console.log(err);
+   * });
+   * @param property A lambda expression that returns the targeted property of the worker. The worker argument in the expression only has the properties owned by the worker class (no methods)
+   * and only those properties that are not RxJS subjects
+   * @param value the value which the property should be set to
+   */
+  public async set<PropertyType>(
     property: (workerProperties: NonObservablesOnly<T>) => PropertyType,
     value: PropertyType
   ): Promise<void> {
-    return this.castPromise<void>(
+    return this.castPromise(
       this.sendRequest(WorkerEvents.Accessible, {
         workerProperty: property,
         additionalConditions: [
           {
-            if: (secret) => secret.body.set,
+            if: (secret) => !!secret?.body.set,
             reject: (secret) =>
               new Error(
-                `WorkerClient: will not apply the set method to the "${secret.propertyName}" property because the set accessor has been explicity set to false`
+                `WorkerClient: will not apply the set method to the "${String(
+                  secret?.propertyName
+                )}" property because the set accessor has been explicity set to false`
               ),
           },
         ],
         secretError:
           'WorkerClient: only properties decorated with @Accessible() can be used in the set method',
         body: () => {
-          return { isGet: false, value: value };
+          return { value, isGet: false };
         },
       })
     );
@@ -253,7 +245,7 @@ export class WorkerClient<T> {
    * });
    * @param property A lambda expression that calls the worker method. The worker argument in the expression only has the methods owned by the worker class (not the properties)
    */
-  call<ReturnType>(
+  public call<ReturnType>(
     callFn: (workerFunctions: FunctionsOnly<T>) => ReturnType
   ): ReturnType extends Promise<any> ? ReturnType : Promise<ReturnType> {
     return this.sendRequest(WorkerEvents.Callable, {
@@ -261,25 +253,27 @@ export class WorkerClient<T> {
       secretError:
         'WorkerClient: only methods decorated with @Callable() can be used in the call method',
       body: (secret) => {
-        return { arguments: secret.body.args };
+        return { arguments: secret?.body.args ?? [] };
       },
       resolve: (resp) => {
         const metaData = WorkerUtils.getAnnotation<CallableMetaData[]>(
           this.definition.worker,
           WorkerAnnotations.Callables,
           []
-        ).filter((x) => x.name === resp.propertyName)[0];
-        if (metaData.shallowTransfer) {
+        ).find((x) => x.name === resp?.propertyName);
+
+        if (metaData?.shallowTransfer) {
           if (metaData.returnType === Promise) {
             throw new Error(
               'WorkerClient: shallowTransfer will not be true in the @Callable() decorator when the decorated method returns a promise'
             );
           }
-          if (metaData.returnType && resp.result) {
+          if (resp?.result) {
             resp.result.__proto__ = metaData.returnType.prototype;
           }
         }
-        return resp.result;
+
+        return resp?.result;
       },
     });
   }
@@ -314,7 +308,7 @@ export class WorkerClient<T> {
    * @param error Callback function that is triggered when the subject throws and error
    * @param complete Callback function that is triggered when the subject's `complete()` method is called within the worker
    */
-  subscribe<ObservableType>(
+  public async subscribe<ObservableType>(
     observable: (workerObservables: ObservablesOnly<T>) => WorkerObservableType<ObservableType>,
     next: (value: ObservableType) => void,
     error?: (error: any) => void,
@@ -327,11 +321,11 @@ export class WorkerClient<T> {
           'WorkerClient: only methods decorated with @Callable() can be used in the call method',
         beforeRequest: (secret) =>
           this.createSubscription(secret.propertyName, next, error, complete),
-        body: (secret, key) => {
+        body: (_secret, key) => {
           return { isUnsubscribe: false, subscriptionKey: key };
         },
-        resolve: (resp, secret, key) => this.observables[key].subscription,
-        beforeReject: (resp, secret, key) => this.removeSubscription(key),
+        resolve: (_resp, _secret, key) => this.observables[key].subscription,
+        beforeReject: (_resp, _secret, key) => this.removeSubscription(key),
       })
     );
   }
@@ -363,7 +357,7 @@ export class WorkerClient<T> {
    * @param observable A lambda expression that returns the targeted RxJS subject of the worker. The worker argument in the expression only has the properties owned by the worker class (no methods)
    * and only those properties that are RxJS subjects
    */
-  observe<ObservableType>(
+  public async observe<ObservableType>(
     observable: (workerObservables: ObservablesOnly<T>) => WorkerObservableType<ObservableType>
   ): Promise<Observable<ObservableType>> {
     return this.castPromise<Observable<ObservableType>>(
@@ -372,11 +366,9 @@ export class WorkerClient<T> {
         secretError:
           'WorkerClient: only methods decorated with @Callable() can be used in the call method',
         beforeRequest: (secret) => this.createObservable(secret.propertyName),
-        body: (secret, key) => {
-          return { isUnsubscribe: false, subscriptionKey: key };
-        },
-        resolve: (resp, secret, key) => this.observables[key].observable,
-        beforeReject: (resp, secret, key) => this.removeSubscription(key),
+        body: (_secret, key) => ({ isUnsubscribe: false, subscriptionKey: key }),
+        resolve: (_resp, _secret, key) => this.observables[key].observable,
+        beforeReject: (_resp, _secret, key) => this.removeSubscription(key),
       })
     );
   }
@@ -386,23 +378,24 @@ export class WorkerClient<T> {
    *  This method is necessary to release resources within the worker. Calling `WorkerClient.destroy()` will also dispose of all observables/subscriptions
    * @param subscriptionOrObservable The observable or subscription that must be disposed of
    */
-  unsubscribe(subscriptionOrObservable: Subscription | Observable<any>): Promise<void> {
+  public async unsubscribe(
+    subscriptionOrObservable: Subscription | Observable<any>
+  ): Promise<void> {
     const key = this.findObservableKey(subscriptionOrObservable);
-    if (key) {
+    if (key !== null) {
       const propertyName: string = this.observables[key].propertyName;
       this.removeSubscription(key);
-      return this.castPromise<void>(
+
+      return this.castPromise(
         this.sendRequest(WorkerEvents.Observable, {
           workerProperty: propertyName,
           secretError: '',
-          body: (secret) => {
-            return { isUnsubscribe: true, subscriptionKey: key };
-          },
+          body: () => ({ isUnsubscribe: true, subscriptionKey: key }),
         })
       );
-    } else {
-      return new Promise((resolve) => resolve());
     }
+
+    return new Promise((resolve) => resolve());
   }
 
   /**
@@ -417,21 +410,24 @@ export class WorkerClient<T> {
     const promise = new Promise((resolve, reject) => {
       if (this._isConnected || opts.isConnect) {
         try {
+          if (this.worker === null) throw new Error('Worker is not initialized');
+
           const noProperty = opts.workerProperty === undefined;
           const secretResult = noProperty
             ? null
             : this.isSecret(
                 typeof opts.workerProperty === 'string'
-                  ? this.worker[opts.workerProperty]
-                  : opts.workerProperty(this.worker),
+                  ? this.worker?.[opts.workerProperty]
+                  : opts.workerProperty?.(this.worker),
                 type
               );
-          if (secretResult || noProperty) {
+          if (secretResult !== null || noProperty) {
             // additional checks ---
             if (opts.additionalConditions) {
               for (const opt of opts.additionalConditions) {
-                if (!opt.if(secretResult)) {
+                if (!opt.if?.(secretResult)) {
                   reject(opt.reject(secretResult));
+
                   return;
                 }
               }
@@ -439,18 +435,19 @@ export class WorkerClient<T> {
 
             // additional functionality ---
             let additionalContext: any;
-            if (opts.beforeRequest) {
+            if (opts.beforeRequest && secretResult !== null) {
               additionalContext = opts.beforeRequest(secretResult);
             }
 
             // response ----
             const requestSecret = this.generateSecretKey();
-            const responseSubscription = this.responseEvent.subscribe((resp) => {
+            const responseSubscription = this.responseEvent?.subscribe((resp) => {
               try {
-                let isValidResponse = resp.type === type && resp.requestSecret === requestSecret;
+                let isValidResponse =
+                  resp.type === (type as number) && resp.requestSecret === requestSecret;
                 isValidResponse = noProperty
                   ? isValidResponse
-                  : isValidResponse && secretResult.propertyName === resp.propertyName;
+                  : isValidResponse && secretResult?.propertyName === resp.propertyName;
 
                 if (isValidResponse) {
                   if (!resp.isError) {
@@ -461,14 +458,14 @@ export class WorkerClient<T> {
                     } else {
                       resolve();
                     }
-                    responseSubscription.unsubscribe();
+                    responseSubscription?.unsubscribe();
                   } else {
                     // reject -----
                     this.removeSecretKey(requestSecret);
-                    if (opts.beforeReject) {
+                    if (opts.beforeReject && secretResult !== null) {
                       opts.beforeReject(resp, secretResult, additionalContext);
                     }
-                    responseSubscription.unsubscribe();
+                    responseSubscription?.unsubscribe();
                     reject(JSON.parse(resp.error));
                   }
                 }
@@ -479,9 +476,9 @@ export class WorkerClient<T> {
 
             // send request -----
             const req: WorkerRequestEvent<EventType> = {
-              requestSecret: requestSecret,
-              propertyName: noProperty ? null : secretResult.propertyName,
-              type: type,
+              type,
+              requestSecret,
+              propertyName: noProperty || secretResult === null ? null : secretResult?.propertyName,
               body: opts.body ? opts.body(secretResult, additionalContext) : null,
             };
             this.postMessage(req);
@@ -499,16 +496,17 @@ export class WorkerClient<T> {
         );
       }
     });
-    return <any>promise;
+
+    return promise as any;
   }
 
   /**
    * A wrapper function around the `Worker.postMessage()` method to catch any serialization errors should they occur
    * @param request the request to be sent to the worker
    */
-  private postMessage<EventType extends number>(request: WorkerRequestEvent<EventType>) {
+  private postMessage<EventType extends number>(request: WorkerRequestEvent<EventType>): void {
     try {
-      this.workerRef.postMessage(request);
+      this.workerRef?.postMessage(request);
     } catch (e) {
       throw new Error('Unable to serialize the request from the client to the worker');
     }
@@ -518,9 +516,11 @@ export class WorkerClient<T> {
    * A utility function to cast promises
    * @param promise promise to cast
    */
-  private castPromise<PromiseType>(promise: Promise<any>): Promise<PromiseType> {
-    return <Promise<PromiseType>>promise;
-  }
+  private readonly castPromise = async <PromiseType>(
+    promise: Promise<any>
+  ): Promise<PromiseType> => {
+    return promise;
+  };
 
   /**
    * Creates client subscription reference with a subscription and an RxJS subject, adds it to the `observables` dictionary with unique key and then returns the key. Called from the `subscribe()` method.
@@ -539,11 +539,12 @@ export class WorkerClient<T> {
     const subject = new Subject<any>();
     const subscription = subject.subscribe(next, error, complete);
     this.observables[key] = {
-      subject: subject,
-      subscription: subscription,
-      propertyName: propertyName,
+      subject,
+      subscription,
+      propertyName,
       observable: null,
     };
+
     return key;
   }
 
@@ -555,11 +556,12 @@ export class WorkerClient<T> {
     const key = this.generateSubscriptionKey(propertyName);
     const subject = new Subject<any>();
     this.observables[key] = {
-      subject: subject,
+      subject,
+      propertyName,
       subscription: null,
-      propertyName: propertyName,
       observable: subject.asObservable(),
     };
+
     return key;
   }
 
@@ -567,18 +569,17 @@ export class WorkerClient<T> {
    * Iterates through the `observables` dictionary to find the associated key for a particular subscription or observable. Returns null if no match is found
    * @param value Subscription or observable for which the dictionary key must be found
    */
-  private findObservableKey(value: Subscription | Observable<any>): string {
-    for (const key in this.observables) {
-      if (value instanceof Subscription) {
-        if (this.observables[key].subscription === value) {
-          return key;
-        }
-      } else {
-        if (this.observables[key].observable === value) {
-          return key;
-        }
+  private findObservableKey(value: Subscription | Observable<any>): string | null {
+    for (const key of Object.keys(this.observables)) {
+      if (value instanceof Subscription && this.observables[key].subscription === value) {
+        return key;
+      }
+
+      if (value instanceof Observable && this.observables[key].observable === value) {
+        return key;
       }
     }
+
     return null;
   }
 
@@ -586,12 +587,8 @@ export class WorkerClient<T> {
    * Remove a subscription or observable reference from `observables` dictionary. Removed subscriptions are unsubscribed before destroyed
    * @param subscriptionKey unique key in the `observables` dictionary
    */
-  private removeSubscription(subscriptionKey: string) {
-    if (this.observables[subscriptionKey]) {
-      if (this.observables[subscriptionKey].subscription) {
-        this.observables[subscriptionKey].subscription.unsubscribe();
-      }
-    }
+  private removeSubscription(subscriptionKey: string): void {
+    this.observables[subscriptionKey]?.subscription?.unsubscribe();
     delete this.observables[subscriptionKey];
   }
 
@@ -600,12 +597,12 @@ export class WorkerClient<T> {
    * @param propertyName appended as the prefix to the key
    * @param length length of the randomly generated characters
    */
-  private generateKey(propertyName: string, length: number) {
+  private readonly generateKey = (propertyName: string, length: number) => {
     return `${propertyName.toUpperCase()}_${Array(length)
       .fill(null)
       .map(() => Math.round(Math.random() * 16).toString(16))
       .join('')}`;
-  }
+  };
 
   /**
    * Creates a unique key for a subscription/observable reference for use in the `observables` dictionary. This key allows messages from the worker to be correctly mapped and handled in the client
@@ -613,9 +610,10 @@ export class WorkerClient<T> {
    */
   private generateSubscriptionKey(propertyName: string): string {
     let key = this.generateKey(propertyName, 6);
-    while (this.observables[key]) {
+    while (this.observables[key] !== undefined) {
       key = this.generateKey(propertyName, 6);
     }
+
     return key;
   }
 
@@ -624,13 +622,13 @@ export class WorkerClient<T> {
    * the worker
    * @param propertyName property name of the worker's property/method that is being called. This is attached as a prefix to the unique key
    */
-  private generateSecretKey(propertyName?: string): string {
-    propertyName = propertyName ? propertyName : 'client';
+  private generateSecretKey(propertyName: string = 'client'): string {
     let key = this.generateKey(propertyName, 16);
     while (this.secrets.indexOf(key) !== -1) {
       key = this.generateKey(propertyName, 16);
     }
     this.secrets.push(key);
+
     return key;
   }
 
@@ -638,7 +636,7 @@ export class WorkerClient<T> {
    * Removes a key from the `secrets` array if it exists
    * @param secret unique key to be removed
    */
-  private removeSecretKey(secret: string) {
+  private removeSecretKey(secret: string): void {
     if (this.secrets.indexOf(secret) !== -1) {
       this.secrets.splice(this.secrets.indexOf(secret), 1);
     }
@@ -653,43 +651,54 @@ export class WorkerClient<T> {
   private isSecret<SecretType extends number>(
     secretResult: any,
     type: SecretType
-  ): SecretResult<SecretType> {
-    if (secretResult) {
-      if (secretResult['clientSecret'] && secretResult['propertyName'] && secretResult['type']) {
-        if (secretResult['clientSecret'] === this.workerSecret && secretResult['type'] === type) {
-          return <SecretResult<SecretType>>secretResult;
-        }
-      }
+  ): SecretResult<SecretType> | null {
+    if (
+      secretResult &&
+      secretResult['clientSecret'] &&
+      secretResult['propertyName'] &&
+      secretResult['type'] &&
+      secretResult['clientSecret'] === this.workerSecret &&
+      secretResult['type'] === type
+    ) {
+      return secretResult as SecretResult<SecretType>;
     }
+
     return null;
   }
 
   /**
    * Creates the event listeners to listen for, and handle, messages recieved through `Worker.onmessage`
    */
-  private registerEvents() {
+  private registerEvents(): void {
     this.responseEvent = new Subject<WorkerResponseEvent<WorkerEvents.Callable>>();
     this.observables = {};
 
-    this.workerRef.onmessage = (ev: WorkerEvent<WorkerResponseEvent<any>>) => {
-      switch (ev.data.type) {
-        case WorkerEvents.ObservableMessage:
-          const body: WorkerObservableMessage = ev.data.result;
-          if (this.observables[body.key]) {
-            switch (body.type) {
-              case WorkerObservableMessageTypes.Next:
-                this.observables[body.key].subject.next(body.value);
-                break;
-              case WorkerObservableMessageTypes.Error:
-                this.observables[body.key].subject.error(body.error);
-                break;
-              case WorkerObservableMessageTypes.Complete:
-                this.observables[body.key].subject.complete();
-            }
+    if (this.workerRef === null || this.workerRef === undefined) {
+      throw new Error('Worker Ref is not defined');
+    }
+
+    this.workerRef.onmessage = (
+      ev: WorkerEvent<WorkerResponseEvent<WorkerObservableMessage | WorkerEvents.Callable>>
+    ) => {
+      const body = ev.data.result as WorkerObservableMessage | null;
+      if (ev.data.type === WorkerEvents.ObservableMessage && body?.key) {
+        if (this.observables[body.key] !== undefined) {
+          switch (body.type) {
+            case WorkerObservableMessageTypes.Next:
+              this.observables[body.key].subject.next(body.value);
+              break;
+            case WorkerObservableMessageTypes.Error:
+              this.observables[body.key].subject.error(body.error);
+              break;
+            case WorkerObservableMessageTypes.Complete:
+              this.observables[body.key].subject.complete();
+              break;
+            default:
+              break;
           }
-          break;
-        default:
-          this.responseEvent.next(ev.data);
+        }
+      } else {
+        this.responseEvent?.next(ev.data as WorkerResponseEvent<WorkerEvents.Callable>);
       }
     };
   }

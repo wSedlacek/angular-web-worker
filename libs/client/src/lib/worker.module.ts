@@ -1,6 +1,6 @@
 import { ModuleWithProviders, NgModule } from '@angular/core';
-import { WorkerUtils, WorkerAnnotations } from 'angular-web-worker/common';
 import { WorkerDefinition, WorkerManager } from 'angular-web-worker/client';
+import { WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
 
 /**
  * Provides the `WorkerManager` service with the worker definitions passed into the static `forWorkers` method.
@@ -24,9 +24,11 @@ export class WorkerModule {
    *  ])
    * ]
    */
-  static forWorkers(workerDefinitions: WorkerDefinition[]): ModuleWithProviders {
+  public static forWorkers(workerDefinitions: WorkerDefinition[]): ModuleWithProviders {
     workerDefinitions.forEach((definition) => {
-      if (!WorkerUtils.getAnnotation(definition.worker, WorkerAnnotations.IsWorker)) {
+      try {
+        WorkerUtils.getAnnotation(definition.worker, WorkerAnnotations.IsWorker);
+      } catch {
         throw new Error(
           'WorkerModule: one or more of the provided workers has not been decorated with the @WebWorker decorator'
         );

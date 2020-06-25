@@ -1,84 +1,78 @@
 import {
-  WorkerUtils,
-  WorkerConfig,
-  WorkerAnnotations,
   AccessibleMetaData,
-  SecretResult,
-  WorkerEvents,
   SubscribableMetaData,
+  WorkerAnnotations,
+  WorkerConfig,
+  WorkerEvents,
+  WorkerUtils,
 } from 'angular-web-worker/common';
 
-/*
+/**
  * Collection of factory functions for the factory as attached to a single object which allows for testing of imported function
  */
 export interface WorkerFactoryFunctionsDict {
-  /*
+  /**
    * Attaches a worker configuration to an instance of a worker class
    * @param instance instance of the worker class
    * @param config configuration
    */
-  setWorkerConfig: (instance: any, config: WorkerConfig) => void;
-  /*
+  setWorkerConfig<I>(instance: I, config: WorkerConfig): void;
+  /**
    * Adds a get wrapper to all properties decorated with `@Accessible()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
    * @param instance instance of the worker class
    */
-  configureAccessibles: (instance: any) => void;
+  configureAccessibles<I, P extends Object>(instance: I, prototype: P): void;
   /**
    * Adds a get wrapper to all properties decorated with `@Subscribable()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
    * @param instance instance of the worker class
    */
-  configureSubscribables: (instance: any) => void;
+  configureSubscribables<I, P extends Object>(instance: I, prototype: P): void;
 }
 
 export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
-  /*
+  /**
    * Attaches a worker configuration to an instance of a worker class
    * @param instance instance of the worker class
    * @param config configuration
    */
-  setWorkerConfig: (instance: any, config: WorkerConfig) => {
+  setWorkerConfig: <I>(instance: I, config: WorkerConfig) => {
     Object.defineProperty(instance, WorkerAnnotations.Config, {
-      get: function () {
-        return config;
-      },
+      get: () => config,
       enumerable: true,
       configurable: true,
     });
   },
 
-  configureAccessibles: (instance: any) => {
-    const accessibles: AccessibleMetaData[] = WorkerUtils.getAnnotation(
-      instance.__proto__.constructor,
+  configureAccessibles: <I, P extends Object>(instance: I, prototype: P) => {
+    const accessibles = WorkerUtils.getAnnotation<AccessibleMetaData[]>(
+      prototype.constructor,
       WorkerAnnotations.Accessibles,
       []
     );
 
-    if (accessibles) {
+    if (accessibles.length) {
       accessibles.forEach((item) => {
         let _val = instance[item.name];
-        const getter = function () {
-          const config: WorkerConfig = this.__worker_config__;
-          if (config) {
-            if (config.isClient) {
-              const secret: SecretResult<WorkerEvents.Accessible> = {
-                clientSecret: config.clientSecret,
-                type: WorkerEvents.Accessible,
-                propertyName: item.name,
-                body: {
-                  get: item.get,
-                  set: item.set,
-                },
-              };
-              return secret;
-            } else {
-              return _val;
-            }
-          } else {
-            return _val;
+        const getter = () => {
+          // tslint:disable-next-line: no-invalid-this
+          const config: WorkerConfig | undefined = instance[WorkerAnnotations.Config];
+
+          if (config?.isClient) {
+            return {
+              clientSecret: config.clientSecret,
+              type: WorkerEvents.Accessible,
+              propertyName: item.name,
+              body: {
+                get: item.get,
+                set: item.set,
+              },
+            };
           }
+
+          return _val;
         };
 
-        const setter = (newVal) => {
+        const setter = (newVal: typeof _val) => {
           _val = newVal;
         };
 
@@ -93,37 +87,33 @@ export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
     }
   },
 
-  configureSubscribables: (instance: any) => {
+  configureSubscribables: <I, P extends Object>(instance: I, prototype: P) => {
     const observables = WorkerUtils.getAnnotation<SubscribableMetaData[]>(
-      instance.__proto__.constructor,
+      prototype.constructor,
       WorkerAnnotations.Observables,
       []
     );
 
-    if (observables) {
+    if (observables.length) {
       observables.forEach((item) => {
         let _val = instance[item.name];
 
-        const getter = function () {
-          const config: WorkerConfig = this.__worker_config__;
-          if (config) {
-            if (config.isClient) {
-              const secret: SecretResult<WorkerEvents.Observable> = {
-                clientSecret: config.clientSecret,
-                type: WorkerEvents.Observable,
-                propertyName: item.name,
-                body: null,
-              };
-              return secret;
-            } else {
-              return _val;
-            }
-          } else {
-            return _val;
+        const getter = () => {
+          const config: WorkerConfig | undefined = instance[WorkerAnnotations.Config];
+
+          if (config?.isClient) {
+            return {
+              clientSecret: config.clientSecret,
+              type: WorkerEvents.Observable,
+              propertyName: item.name,
+              body: null,
+            };
           }
+
+          return _val;
         };
 
-        const setter = (newVal) => {
+        const setter = (newVal: typeof _val) => {
           _val = newVal;
         };
 
@@ -139,20 +129,21 @@ export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
   },
 };
 
+type Instantiable<T extends Object> = new (...args: any[]) => T;
+
 /**
  * Class decorator allowing the class to be bootstrapped into a web worker script, and allowing communication with a `WorkerClient`
  */
-export function WebWorker() {
-  return function (target: any) {
-    WorkerUtils.setAnnotation(target, WorkerAnnotations.IsWorker, true);
-    WorkerUtils.setAnnotation(target, WorkerAnnotations.Factory, function create(
-      config: WorkerConfig
-    ) {
-      const instance = new target();
-      WorkerFactoryFunctions.setWorkerConfig(instance, config);
-      WorkerFactoryFunctions.configureAccessibles(instance);
-      WorkerFactoryFunctions.configureSubscribables(instance);
-      return instance;
-    });
-  };
-}
+export const WebWorker = <I>(options?: { deps?: unknown[] }) => <T extends Instantiable<I>>(
+  Target: T
+) => {
+  WorkerUtils.setAnnotation(Target, WorkerAnnotations.IsWorker, true);
+  WorkerUtils.setAnnotation(Target, WorkerAnnotations.Factory, (config: WorkerConfig) => {
+    const instance = new Target(...(options?.deps ?? []));
+    WorkerFactoryFunctions.setWorkerConfig(instance, config);
+    WorkerFactoryFunctions.configureAccessibles(instance, Target.prototype);
+    WorkerFactoryFunctions.configureSubscribables(instance, Target.prototype);
+
+    return instance;
+  });
+};

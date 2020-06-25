@@ -565,7 +565,7 @@ describe('AppWorker', () => {
     await client.connect();
   });
 
-  it('Should call doSomethingElse', async () => {
+  it('should call doSomethingElse', async () => {
     const spy = spyOn(client.workerInstance, 'doSomethingElse');
     await client.call((w) => w.doSomething());
     expect(spy).toHaveBeenCalled();

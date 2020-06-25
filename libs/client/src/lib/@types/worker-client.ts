@@ -1,12 +1,12 @@
-import { Subject, Subscription, Observable } from 'rxjs';
 import {
-  WorkerResponseEvent,
   SecretResult,
-  WorkerEvents,
   WorkerAccessibleBody,
-  WorkerSubscribableBody,
   WorkerCallableBody,
+  WorkerEvents,
+  WorkerResponseEvent,
+  WorkerSubscribableBody,
 } from 'angular-web-worker/common';
+import { Observable, Subject, Subscription } from 'rxjs';
 
 /**
  * A dictionary of client observables that have been created to listen to events trigger by RxJS subjects in the worker.
@@ -30,11 +30,11 @@ export interface WorkerClientObservableRef {
   /**
    * A subscription to the `WorkerClientObservableRef.subject` which is created and returned by the `WorkerClient.subscribe()` method.
    */
-  subscription: Subscription;
+  subscription: Subscription | null;
   /**
    *  An observable from the `WorkerClientObservableRef.subject` which is created and returned by the `WorkerClient.observe()` method.
    */
-  observable: Observable<any>;
+  observable: Observable<any> | null;
   /**
    * The name of the worker's RxJS subject property that the client is listening to
    */
@@ -62,15 +62,15 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * Any conditions that need to be met, in addition to the correct `SecretResult`, before a request can be made to the worker
    */
   additionalConditions?: {
-    if: (secretResult?: SecretResult<EventType>) => boolean;
-    reject: (secretResult?: SecretResult<EventType>) => any;
+    if(secretResult?: SecretResult<EventType> | null): boolean;
+    reject(secretResult?: SecretResult<EventType> | null): any;
   }[];
   /**
    * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the client sends the request to
    * the worker and after the `SecretKey` is validated, along with any `additionalConditions` if the option was specified. The value returned
    * by this function is available for use through the `additionalContext` arguments in the `body`, `resolve` and `beforeReject` options' functions
    */
-  beforeRequest?: (secretResult?: SecretResult<EventType>) => any;
+  beforeRequest?(secretResult: SecretResult<EventType>): any;
   /**
    * Must return the `WorkerRequestEvent.body` that will be sent to the worker.  The structure is determined by the `WorkerClientRequestOpts`'s
    * `EventType` type argument
@@ -78,10 +78,10 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * @param additionalContext if the `beforeRequest` option is provided it is the returned result of that function
    * otherwise it will be undefined
    */
-  body?: (
-    secretResult?: SecretResult<EventType>,
+  body?(
+    secretResult: SecretResult<EventType> | null,
     additionalContext?: any
-  ) => EventType extends WorkerEvents.Callable
+  ): EventType extends WorkerEvents.Callable
     ? WorkerCallableBody
     : EventType extends WorkerEvents.Accessible
     ? WorkerAccessibleBody
@@ -95,11 +95,11 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * @param additionalContext if the `beforeRequest` option is provided it is the returned result of that function
    * otherwise it will be undefined
    */
-  resolve?: (
+  resolve?(
     response?: WorkerResponseEvent<any>,
-    secretResult?: SecretResult<EventType>,
+    secretResult?: SecretResult<EventType> | null,
     additionalContext?: any
-  ) => any;
+  ): any;
   /**
    * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the request is rejected due to an error
    * being caught
@@ -107,9 +107,9 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * @param secretResult the `SecretResult` that was returned when the client called upon the targeted worker property or method
    * @param additionalContext if the `beforeRequest` option is provided it is the returned result of that function
    */
-  beforeReject?: (
+  beforeReject?(
     response?: WorkerResponseEvent<any>,
     secretResult?: SecretResult<EventType>,
     additionalContext?: any
-  ) => void;
+  ): void;
 }

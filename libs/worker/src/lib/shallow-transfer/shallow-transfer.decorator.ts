@@ -1,7 +1,7 @@
 import {
-  WorkerUtils,
   ShallowTransferParamMetaData,
   WorkerAnnotations,
+  WorkerUtils,
 } from 'angular-web-worker/common';
 
 /**
@@ -9,15 +9,17 @@ import {
  * the method is decorated with `@Callable()`
  * @Experimental has limitations
  */
-export function ShallowTransfer() {
-  return function (target: Object, propertyKey: string | symbol, parameterIndex: number) {
-    const argTypes: any[] = Reflect.getMetadata('design:paramtypes', target, propertyKey);
-    WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.ShallowTransferArgs, <
-      ShallowTransferParamMetaData
-    >{
-      name: propertyKey,
-      type: argTypes[parameterIndex],
-      argIndex: parameterIndex,
-    });
+export const ShallowTransfer = () => <T extends Object>(
+  target: T,
+  propertyKey: string,
+  parameterIndex: number
+) => {
+  const argTypes = Reflect.getMetadata('design:paramtypes', target, propertyKey);
+  const annotation: ShallowTransferParamMetaData = {
+    name: propertyKey,
+    type: argTypes[parameterIndex],
+    argIndex: parameterIndex,
   };
-}
+
+  WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.ShallowTransferArgs, annotation);
+};

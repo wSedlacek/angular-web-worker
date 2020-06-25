@@ -1,5 +1,5 @@
-import { WebWorkerType } from 'angular-web-worker/common';
 import { WorkerClient, WorkerDefinition } from 'angular-web-worker/client';
+import { WebWorkerType } from 'angular-web-worker/common';
 
 /**
  * Injectable angular service with a primary responsibility of acting as `WorkerClient` factory through its `createClient()` method.
@@ -32,14 +32,14 @@ export class WorkerManager {
   /**
    * List of workers with details to created new worker instances. Passed into `WorkerModule.forWorkers()`
    */
-  private workerDefinitions: WorkerDefinition[];
+  private readonly workerDefinitions: WorkerDefinition[];
 
   /**
    * Creates a new `WorkerManager` and called from `WorkerModule.forWorkers()` where the angular provider is created
    * @param workerDefinitions List of workers with details to create new worker instances. Passed into `WorkerModule.forWorkers()`
    */
-  constructor(workerDefinitions: WorkerDefinition[]) {
-    this.workerDefinitions = workerDefinitions ? workerDefinitions : [];
+  constructor(workerDefinitions?: WorkerDefinition[]) {
+    this.workerDefinitions = workerDefinitions ?? [];
   }
 
   /**
@@ -72,15 +72,13 @@ export class WorkerManager {
    *
    * }
    */
-  createClient<T>(workerType: WebWorkerType<T>, runInApp: boolean = false): WorkerClient<T> {
-    const definition = this.workerDefinitions.filter((p) => p.worker === workerType)[0];
-    if (definition) {
-      return new WorkerClient<T>(definition, runInApp);
-    } else {
-      throw new Error(
-        'WorkerManager: all web workers must be registered in the forWorkers function of the WorkerModule'
-      );
-    }
+  public createClient<T>(workerType: WebWorkerType<T>, runInApp: boolean = false): WorkerClient<T> {
+    const definition = this.workerDefinitions.find((p) => p.worker === workerType);
+    if (definition) return new WorkerClient<T>(definition, runInApp);
+
+    throw new Error(
+      'WorkerManager: all web workers must be registered in the forWorkers function of the WorkerModule'
+    );
   }
 
   /**

@@ -6,18 +6,18 @@ import { WorkerAnnotations } from 'angular-web-worker/common';
 export class WorkerUtils {
   /**
    * Creates or replaces a worker annotation
-   * @param cls Class or object that the annotations will be attached to
+   * @param target Class or object that the annotations will be attached to
    * @param propertyKey name of the annotated property
    * @param value the value of the annotation
    */
-  static setAnnotation(cls: any, propertyKey: string, value: any): void {
-    if (cls.hasOwnProperty(WorkerAnnotations.Annotation)) {
-      cls[WorkerAnnotations.Annotation][propertyKey] = value;
+  public static setAnnotation<T extends Object>(target: T, propertyKey: string, value: any): void {
+    if (target.hasOwnProperty(WorkerAnnotations.Annotation)) {
+      target[WorkerAnnotations.Annotation][propertyKey] = value;
     } else {
-      Object.defineProperty(cls, WorkerAnnotations.Annotation, {
+      Object.defineProperty(target, WorkerAnnotations.Annotation, {
         value: {},
       });
-      WorkerUtils.setAnnotation(cls, propertyKey, value);
+      WorkerUtils.setAnnotation(target, propertyKey, value);
     }
   }
 
@@ -27,7 +27,7 @@ export class WorkerUtils {
    * @param propertyKey name of the annotated array
    * @param value the item to add in the array
    */
-  static pushAnnotation(cls: any, propertyKey: string, value: any): void {
+  public static pushAnnotation(cls: any, propertyKey: string, value: any): void {
     if (cls.hasOwnProperty(WorkerAnnotations.Annotation)) {
       if (cls[WorkerAnnotations.Annotation].hasOwnProperty(propertyKey)) {
         cls[WorkerAnnotations.Annotation][propertyKey].push(value);
@@ -49,11 +49,17 @@ export class WorkerUtils {
    * @param propertyKey name of the annotated array
    * @param ifUndefined the returned value if the annotated property does not exist
    */
-  static getAnnotation<T>(cls: any, propertyKey: string, ifUndefined = null): T {
+  public static getAnnotation<T extends Object>(
+    cls: Object,
+    propertyKey: string,
+    ifUndefined?: T
+  ): T {
     if (cls.hasOwnProperty(WorkerAnnotations.Annotation)) {
-      return cls[WorkerAnnotations.Annotation][propertyKey];
-    } else {
-      return ifUndefined;
+      return cls[WorkerAnnotations.Annotation][propertyKey] ?? ifUndefined;
     }
+
+    if (ifUndefined === undefined) throw new Error('No default value given!');
+
+    return ifUndefined;
   }
 }

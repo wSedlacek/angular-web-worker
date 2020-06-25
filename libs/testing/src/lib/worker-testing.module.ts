@@ -1,6 +1,7 @@
-import { WorkerModule, WorkerManager } from 'angular-web-worker/client';
-import { WebWorkerType, WorkerUtils, WorkerAnnotations } from 'angular-web-worker/common';
-import { WorkerTestingManager } from './worker-testing-manager/worker-testing-manager';
+import { ModuleWithProviders } from '@angular/core';
+import { WorkerManager, WorkerModule } from 'angular-web-worker/client';
+import { WebWorkerType, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
+import { WorkerTestingManager } from 'angular-web-worker/testing';
 
 /**
  * **Used for Testing**
@@ -9,9 +10,11 @@ import { WorkerTestingManager } from './worker-testing-manager/worker-testing-ma
  * and from a worker.
  */
 export class WorkerTestingModule {
-  static forWorkers(workers: WebWorkerType<any>[]) {
+  public static forWorkers(workers: WebWorkerType<any>[]): ModuleWithProviders {
     workers.forEach((wkr) => {
-      if (!WorkerUtils.getAnnotation(wkr, WorkerAnnotations.IsWorker)) {
+      try {
+        WorkerUtils.getAnnotation(wkr, WorkerAnnotations.IsWorker);
+      } catch {
         throw new Error(
           'WorkerModule: one or more of the provided workers has not been decorated with the @WebWorker decorator'
         );

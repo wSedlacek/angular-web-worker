@@ -6,9 +6,9 @@ export interface WorkerMessageBus {
   /**
    * Messages transferred from a client to a controller
    */
-  postMessage: (resp: any) => void;
+  postMessage(resp: any): void;
   /**
    * Messages recieved by a controller from a client
    */
-  onmessage: (ev: MessageEvent) => void;
+  onmessage(ev: MessageEvent): void;
 }

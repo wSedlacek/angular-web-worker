@@ -1,4 +1,4 @@
-import { WorkerManager, WorkerClient } from 'angular-web-worker/client';
+import { WorkerClient, WorkerManager } from 'angular-web-worker/client';
 import { WebWorkerType } from 'angular-web-worker/common';
 import { WorkerTestingClient } from 'angular-web-worker/testing';
 
@@ -10,29 +10,30 @@ import { WorkerTestingClient } from 'angular-web-worker/testing';
  *
  */
 export class WorkerTestingManager extends WorkerManager {
-  constructor(private workers: WebWorkerType<any>[]) {
+  constructor(private readonly workers: WebWorkerType<any>[]) {
     super(
       workers.map((x) => {
         return { worker: x, initFn: () => null };
       })
     );
 
-    if (!workers) {
+    if (!Array.isArray(workers)) {
       throw new Error(
         'the workers argument for the TestWorkerManager constructor cannot be undefined or null'
       );
     }
   }
 
-  createClient<T>(workerType: WebWorkerType<T>, runInApp: boolean = false): WorkerClient<T> {
-    const definition = this.workers.filter((p) => p === workerType)[0];
+  @Override()
+  public createClient<T>(workerType: WebWorkerType<T>, runInApp: boolean = false): WorkerClient<T> {
+    const definition = this.workers.find((p) => p === workerType);
     if (definition) {
       return new WorkerTestingClient<T>({ worker: workerType, initFn: () => null });
-    } else {
-      throw new Error(
-        'WorkerManager: all web workers must be registered in the createTestManager function'
-      );
     }
+
+    throw new Error(
+      'WorkerManager: all web workers must be registered in the createTestManager function'
+    );
   }
 }
 
@@ -40,6 +41,6 @@ export class WorkerTestingManager extends WorkerManager {
  * Creates a new `TestWorkerManager`
  * @param workers array of workers that can be created through the `createClient` method
  */
-export function createTestManager(workers: WebWorkerType<any>[]): WorkerTestingManager {
+export const createTestManager = (workers: WebWorkerType<any>[]): WorkerTestingManager => {
   return new WorkerTestingManager(workers);
-}
+};

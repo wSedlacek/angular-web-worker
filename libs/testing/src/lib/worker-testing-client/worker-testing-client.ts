@@ -1,5 +1,5 @@
-import { WorkerClient, WorkerDefinition, ClientWebWorker } from 'angular-web-worker/client';
-import { WebWorkerType, WorkerUtils, WorkerAnnotations } from 'angular-web-worker/common';
+import { ClientWebWorker, WorkerClient, WorkerDefinition } from 'angular-web-worker/client';
+import { WebWorkerType, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
 
 /**
  * **Used for Testing**
@@ -16,12 +16,12 @@ export class WorkerTestingClient<T> extends WorkerClient<T> {
   /**
    * Exposed instance of the private worker instance to allow testing & spying
    */
-  get workerInstance(): T {
+  get workerInstance(): T | undefined {
     if (this.isConnected) {
       return (this['workerRef'] as ClientWebWorker<T>).workerInstance;
-    } else {
-      throw new Error('Cannot access worker instance until the connect method has been called');
     }
+
+    throw new Error('Cannot access worker instance until the connect method has been called');
   }
 }
 
@@ -29,10 +29,12 @@ export class WorkerTestingClient<T> extends WorkerClient<T> {
  * Creates a new `TestWorkerClient`
  * @param workerClass worker class
  */
-export function createTestClient<T>(workerClass: WebWorkerType<T>): WorkerTestingClient<T> {
-  if (!WorkerUtils.getAnnotation(workerClass, WorkerAnnotations.IsWorker)) {
+export const createTestClient = <T>(workerClass: WebWorkerType<T>): WorkerTestingClient<T> => {
+  try {
+    WorkerUtils.getAnnotation(workerClass, WorkerAnnotations.IsWorker);
+  } catch {
     throw new Error('createTestClient: the provided class must be decorated with @WebWorker()');
-  } else {
-    return new WorkerTestingClient({ worker: workerClass, initFn: () => null });
   }
-}
+
+  return new WorkerTestingClient({ worker: workerClass, initFn: () => null });
+};

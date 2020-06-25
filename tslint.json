@@ -1,3 +1,11 @@
 {
-  "extends": "tslint-config-suiyobi"
+  "extends": "tslint-config-suiyobi",
+  "rules": {
+    "no-import-side-effect": [
+      true,
+      {
+        "ignore-module": "(angular-register|commands|jest-preset-angular|zone|reflect-metadata)$"
+      }
+    ]
+  }
 }

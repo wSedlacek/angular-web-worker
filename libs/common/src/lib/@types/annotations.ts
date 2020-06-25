@@ -100,7 +100,7 @@ export interface ShallowTransferParamMetaData {
   /**
    * Name of the decorated property
    */
-  name: string;
+  name: string | symbol;
   /**
    * Prototype of the decorated argument's design type
    */

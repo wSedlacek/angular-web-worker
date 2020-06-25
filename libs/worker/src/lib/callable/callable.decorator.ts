@@ -1,12 +1,12 @@
-import 'reflect-metadata';
 import {
   CallableMetaData,
+  SecretResult,
+  WorkerAnnotations,
   WorkerConfig,
   WorkerEvents,
-  SecretResult,
   WorkerUtils,
-  WorkerAnnotations,
 } from 'angular-web-worker/common';
+import 'reflect-metadata';
 
 /**
  * Configurable options for the `@Callable()` decorator, defining how the decorated method is called from a `WorkerClient`.
@@ -17,7 +17,7 @@ export interface CallableOpts {
    * @defaultvalue false
    * @Experimental has limitations
    */
-  shallowTransfer?: boolean;
+  shallowTransfer: boolean;
 }
 
 /**
@@ -26,42 +26,45 @@ export interface CallableOpts {
  * @Serialized Functions will not be copied and circular referencing structures will cause errors. This applies to both the function arguments and the value returned by the function
  * @param options Configurable options defining how the decorated method is called from a `WorkerClient`
  */
-export function Callable(options?: CallableOpts) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const opts = { shallowTransfer: false };
-    if (options) {
-      opts.shallowTransfer = options.shallowTransfer ? true : false;
+export const Callable = (options?: CallableOpts) => <T extends Object, M extends keyof T & string>(
+  target: T,
+  propertyKey: T[M] extends (...args: any) => any ? M : never,
+  descriptor: TypedPropertyDescriptor<(...args: any[]) => any>
+) => {
+  const opts = { shallowTransfer: false };
+  if (options) {
+    opts.shallowTransfer = !!options.shallowTransfer;
+  }
+
+  const annotation: CallableMetaData = {
+    name: propertyKey,
+    shallowTransfer: opts.shallowTransfer,
+    returnType: Reflect.getMetadata('design:returntype', target, propertyKey),
+  };
+
+  WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.Callables, annotation);
+
+  const originalMethod = descriptor.value;
+  if (!originalMethod) throw new Error('@Callable(): could not bind to undefined method');
+
+  descriptor.value = function (
+    ...args: unknown[]
+  ):
+    | ReturnType<T[M] extends (...args: unknown[]) => unknown ? T[M] : () => unknown>
+    | SecretResult<WorkerEvents.Callable> {
+    // tslint:disable: no-invalid-this
+    const config: WorkerConfig = this[WorkerAnnotations.Config];
+
+    if (config?.isClient) {
+      return {
+        clientSecret: this[WorkerAnnotations.Config].clientSecret,
+        type: WorkerEvents.Callable,
+        propertyName: propertyKey,
+        body: { args },
+      };
     }
 
-    WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.Callables, <CallableMetaData>{
-      name: propertyKey,
-      shallowTransfer: opts.shallowTransfer,
-      returnType: Reflect.getMetadata('design:returntype', target, propertyKey),
-    });
-
-    const originalMethod = descriptor.value;
-    descriptor.value = function () {
-      const context = this;
-      const args = Array.prototype.slice.call(arguments);
-      const config: WorkerConfig = context.__worker_config__;
-      if (config) {
-        if (config.isClient) {
-          const secret: SecretResult<WorkerEvents.Callable> = {
-            clientSecret: context.__worker_config__.clientSecret,
-            type: WorkerEvents.Callable,
-            propertyName: propertyKey,
-            body: {
-              args: args,
-            },
-          };
-          return secret;
-        } else {
-          return originalMethod.call(context, ...args);
-        }
-      } else {
-        return originalMethod.call(context, ...args);
-      }
-    };
-    return descriptor;
+    return originalMethod.call(this, ...args);
+    // tslint:enable: no-invalid-this
   };
-}
+};

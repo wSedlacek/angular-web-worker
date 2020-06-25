@@ -1,4 +1,4 @@
-import { WorkerUtils, AccessibleMetaData, WorkerAnnotations } from 'angular-web-worker/common';
+import { AccessibleMetaData, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
 import 'reflect-metadata';
 
 /**
@@ -28,23 +28,18 @@ export interface AccessibleOpts {
  * @Serialized Functions will not be copied and circular referencing structures will cause errors
  * @param options configurable options defining how the decorated property can be interacted with from a `WorkerClient`
  */
-export function Accessible(options?: AccessibleOpts) {
-  const opts: AccessibleOpts = { get: true, set: true, shallowTransfer: false };
-  if (options) {
-    opts.get = options.get === false ? false : true;
-    opts.set = options.set === false ? false : true;
-    opts.shallowTransfer = options.shallowTransfer ? true : false;
-  }
+export const Accessible = (options: AccessibleOpts = {}) => {
+  const { get = true, set = true, shallowTransfer = false } = options;
 
-  return function (target: any, propertyKey: string) {
-    WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.Accessibles, <
-      AccessibleMetaData
-    >{
+  return <T extends Object>(target: T, propertyKey: string) => {
+    const annotation: AccessibleMetaData = {
+      get,
+      set,
+      shallowTransfer,
       name: propertyKey,
       type: Reflect.getMetadata('design:type', target, propertyKey),
-      get: opts.get,
-      set: opts.set,
-      shallowTransfer: opts.shallowTransfer,
-    });
+    };
+
+    WorkerUtils.pushAnnotation(target.constructor, WorkerAnnotations.Accessibles, annotation);
   };
-}
+};
