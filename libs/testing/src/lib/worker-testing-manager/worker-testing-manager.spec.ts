@@ -1,15 +1,17 @@
 import { WebWorker } from 'angular-web-worker';
 import { WorkerTestingClient } from 'angular-web-worker/testing';
 
-import { WorkerTestingManager, createTestManager } from './worker-testing-manager';
+import { createTestManager, WorkerTestingManager } from './worker-testing-manager';
 
+// tslint:disable: max-classes-per-file
 @WebWorker()
 class TestClass {
-  property: string = 'propertyvalue';
+  public property = 'propertyvalue';
 }
 
 @WebWorker()
 class UndecoratedClass {}
+// tslint:enable: max-classes-per-file
 
 describe('WorkerTestingManager: [angular-web-worker/testing]', () => {
   let manager: WorkerTestingManager;
@@ -17,17 +19,17 @@ describe('WorkerTestingManager: [angular-web-worker/testing]', () => {
     manager = new WorkerTestingManager([TestClass]);
   });
 
-  it('Should to create a new instance of a worker client', () => {
+  it('should to create a new instance of a worker client', () => {
     expect(manager.createClient(TestClass) instanceof WorkerTestingClient).toEqual(true);
   });
 
-  it('Should through an error if no worker classes are provided', async () => {
-    expect(() => new WorkerTestingManager(null)).toThrowError();
+  it('should through an error if no worker classes are provided', () => {
+    expect(() => new WorkerTestingManager(null as any)).toThrowError();
   });
 });
 
 describe('createTestManager(): [angular-web-worker/testing]', () => {
-  it('Should create a new instance of a TestWorkerManager', () => {
+  it('should create a new instance of a TestWorkerManager', () => {
     expect(createTestManager([TestClass]) instanceof WorkerTestingManager).toEqual(true);
   });
 });

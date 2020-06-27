@@ -32,7 +32,7 @@ export class WorkerClient<T> {
   /**
    * Reference to the browser's worker class for posting messages and terminating the worker
    */
-  private workerRef?: Worker | ClientWebWorker<T> | null;
+  private workerRef: Worker | ClientWebWorker<T> | null = null;
   /**
    * The client instance of the worker class
    */
@@ -90,7 +90,7 @@ export class WorkerClient<T> {
       });
 
       this.workerRef = !this.runInApp
-        ? this.definition.initFn?.()
+        ? this.definition.initFn?.() ?? null
         : new ClientWebWorker(this.definition.worker, this.isTestClient);
 
       this.registerEvents();
@@ -408,10 +408,8 @@ export class WorkerClient<T> {
     opts: WorkerClientRequestOpts<T, EventType, ReturnType>
   ): ReturnType extends Promise<any> ? ReturnType : Promise<ReturnType> {
     const promise = new Promise((resolve, reject) => {
-      if (this._isConnected || opts.isConnect) {
+      if (this.worker !== null && (this._isConnected || opts.isConnect)) {
         try {
-          if (this.worker === null) throw new Error('Worker is not initialized');
-
           const noProperty = opts.workerProperty === undefined;
           const secretResult = noProperty
             ? null
@@ -466,7 +464,8 @@ export class WorkerClient<T> {
                       opts.beforeReject(resp, secretResult, additionalContext);
                     }
                     responseSubscription?.unsubscribe();
-                    reject(JSON.parse(resp.error));
+                    if (resp.error) reject(JSON.parse(resp.error));
+                    else reject();
                   }
                 }
               } catch (e) {

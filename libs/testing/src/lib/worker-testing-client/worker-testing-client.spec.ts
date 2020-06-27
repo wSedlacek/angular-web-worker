@@ -3,12 +3,14 @@ import { createTestClient } from 'angular-web-worker/testing';
 
 import { WorkerTestingClient } from './worker-testing-client';
 
+// tslint:disable: max-classes-per-file
 @WebWorker()
 class TestClass {
-  property: string = 'propertyvalue';
+  public property = 'propertyvalue';
 }
 
 class UndecoratedClass {}
+// tslint:enable: max-classes-per-file
 
 describe('WorkerTestingClient: [angular-web-worker/testing]', () => {
   let worker: WorkerTestingClient<TestClass>;
@@ -16,12 +18,12 @@ describe('WorkerTestingClient: [angular-web-worker/testing]', () => {
     worker = new WorkerTestingClient<TestClass>({ worker: TestClass, initFn: () => null });
   });
 
-  it('Should be configured for testing', () => {
+  it('should be configured for testing', () => {
     expect(worker['isTestClient']).toEqual(true);
     expect(worker['runInApp']).toEqual(true);
   });
 
-  it('Should provide access to the underlying worker instance', async () => {
+  it('should provide access to the underlying worker instance', async () => {
     await worker.connect();
     expect(worker.workerInstance instanceof TestClass).toEqual(true);
   }, 200);
@@ -32,7 +34,7 @@ describe('createTestWorker(): [angular-web-worker/testing]', () => {
     expect(createTestClient(TestClass) instanceof WorkerTestingClient).toEqual(true);
   });
 
-  it('Should throw an error if an undecorated class is provided', () => {
+  it('should throw an error if an undecorated class is provided', () => {
     expect(() => createTestClient(UndecoratedClass)).toThrow();
   });
 });

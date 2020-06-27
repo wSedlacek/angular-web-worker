@@ -263,9 +263,8 @@ export class WorkerController<T> {
    */
   public handleSubscription(request: WorkerRequestEvent<WorkerEvents.Observable>): void {
     let response: WorkerResponseEvent<WorkerEvents.Observable>;
-    if (request.body === null) throw new Error('No body');
 
-    if (!request.body.isUnsubscribe) {
+    if (request.body !== null && !request.body.isUnsubscribe) {
       try {
         this.createSubscription(request);
         response = this.response(WorkerEvents.Observable, request, request.body.subscriptionKey);
@@ -277,7 +276,7 @@ export class WorkerController<T> {
       this.postMessage(response);
     } else {
       try {
-        this.removeSubscription(request.body.subscriptionKey);
+        if (request.body?.subscriptionKey) this.removeSubscription(request.body.subscriptionKey);
         response = this.response(WorkerEvents.Observable, request, null);
       } catch (e) {
         response = this.error(WorkerEvents.Observable, request, e);
@@ -295,11 +294,12 @@ export class WorkerController<T> {
   public createSubscription(request: WorkerRequestEvent<WorkerEvents.Observable>): void {
     if (request.body === null) throw new Error('No body');
     if (request.propertyName === null) throw new Error('No property name');
-    this.removeSubscription(request.body.subscriptionKey);
 
-    this.subscriptions[request.body.subscriptionKey] = (this.worker[
-      request.propertyName
-    ] as Subject<any>).subscribe(
+    const subject = this.worker[request.propertyName];
+    if (!(subject instanceof Subject)) throw new Error('Property is not a Subject');
+
+    this.removeSubscription(request.body.subscriptionKey);
+    this.subscriptions[request.body.subscriptionKey] = subject.subscribe(
       (val) => {
         const response: WorkerResponseEvent<WorkerObservableMessage> = {
           type: WorkerEvents.ObservableMessage,

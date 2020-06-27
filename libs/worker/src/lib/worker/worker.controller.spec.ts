@@ -1,64 +1,64 @@
 import {
-  WebWorker,
-  WorkerController,
-  Callable,
-  ShallowTransfer,
   Accessible,
+  Callable,
   OnWorkerInit,
+  ShallowTransfer,
   Subscribable,
-} from '../../public-api';
+  WebWorker,
+} from 'angular-web-worker';
 import {
-  WorkerRequestEvent,
-  WorkerCallableBody,
-  WorkerSubscribableBody,
-  WorkerObservableMessage,
-  WorkerObservableMessageTypes,
-} from '../../../../common/src/public-api';
-import {
-  WorkerEvents,
-  WorkerAnnotations,
-  WorkerResponseEvent,
   WorkerAccessibleBody,
-} from '../../../../common/src/public-api';
+  WorkerAnnotations,
+  WorkerCallableBody,
+  WorkerEvents,
+  WorkerObservableMessageTypes,
+  WorkerRequestEvent,
+  WorkerResponseEvent,
+  WorkerSubscribableBody,
+} from 'angular-web-worker/common';
 import { Subject, Subscription } from 'rxjs';
 
-class TestUser {
-  name: string;
-  age: number;
+import { WorkerController } from './worker.controller';
 
-  constructor(user: Partial<TestUser>) {
+// tslint:disable: max-classes-per-file
+class TestUser {
+  public name: string;
+  public age: number;
+
+  constructor(user: Pick<TestUser, 'age' | 'name'>) {
     this.age = user.age;
     this.name = user.name;
   }
 
-  birthday() {
-    this.age++;
+  public birthday(): void {
+    this.age += 1;
   }
 }
 
 @WebWorker()
 class TestClass implements OnWorkerInit {
-  @Accessible() setTestProp: number;
-  @Accessible() getTestProp: string = 'testvalue';
-  @Accessible({ shallowTransfer: true }) transferableTestProp: TestUser;
-  @Subscribable() subscriptionTest: Subject<any> = new Subject<string>();
-  @Subscribable() undefinedSubscriptionTest: Subject<any>;
+  @Accessible() public setTestProp?: number;
+  @Accessible() public getTestProp = 'testvalue';
+  @Accessible({ shallowTransfer: true }) public transferableTestProp?: TestUser;
+  @Subscribable() public subscriptionTest: Subject<any> = new Subject<string>();
+  @Subscribable() public undefinedSubscriptionTest?: Subject<any>;
 
   constructor() {}
 
-  onWorkerInit() {}
+  @Override()
+  public onWorkerInit(): void {}
 
   @Callable()
-  argsTestFn(name: string, age: number) {}
+  public argsTestFn(_name: string, _age: number): void {}
 
   @Callable()
-  syncReturnTestFn() {
+  public syncReturnTestFn(): string {
     return 'sync';
   }
 
   @Callable()
-  async asyncReturnTestFn() {
-    return new Promise((resolve, reject) => {
+  public async asyncReturnTestFn(): Promise<string> {
+    return new Promise((resolve, _reject) => {
       setTimeout(() => {
         resolve('async');
       }, 100);
@@ -66,253 +66,265 @@ class TestClass implements OnWorkerInit {
   }
 
   @Callable()
-  shallowTransferTestFn(baseAge: number, @ShallowTransfer() user: TestUser) {
+  public shallowTransferTestFn(baseAge: number, @ShallowTransfer() user: TestUser): number {
     user.birthday();
+
     return baseAge + user.age;
   }
 
   @Callable()
-  errorTestFn() {
+  public errorTestFn(): void {
     throw new Error('error');
   }
 }
+// tslint:enable: max-classes-per-file
 
+const MOCK_EVENT = 'mock-event';
+const messageBus = {
+  onmessage: jest.fn(),
+  postMessage: jest.fn(),
+};
+
+// tslint:disable-next-line: no-big-function
 describe('WorkerController: [angular-web-worker]', () => {
-  function createRequest<T extends number>(
+  const createRequest = <T extends number>(
     type: T,
     propertyName?: string,
     body?: any
-  ): WorkerRequestEvent<T> {
-    return <WorkerRequestEvent<T>>{
-      type: type,
+  ): WorkerRequestEvent<T> => {
+    return {
+      type,
       body: body ? JSON.parse(JSON.stringify(body)) : null,
-      propertyName: propertyName,
+      propertyName: propertyName ?? null,
       requestSecret: 'secret',
     };
-  }
+  };
 
-  function createResponse(
+  const createResponse = (
     request: WorkerRequestEvent<any>,
     result?: any
-  ): WorkerResponseEvent<any> {
-    return <WorkerResponseEvent<any>>{
+  ): WorkerResponseEvent<any> => {
+    return {
+      result,
       type: request.type,
-      result: result,
       isError: false,
       propertyName: request.propertyName,
       requestSecret: 'secret',
     };
-  }
+  };
 
-  function privateWorker<T>(workerController: WorkerController<T>): TestClass {
+  const privateWorker = <T>(workerController: WorkerController<T>): TestClass => {
     return workerController['worker'];
-  }
+  };
 
-  function privateSubscriptionsDict<T>(
+  const privateSubscriptionsDict = <T>(
     workerController: WorkerController<T>
-  ): { [id: string]: Subscription } {
+  ): { [id: string]: Subscription } => {
     return workerController['subscriptions'];
-  }
+  };
 
   let controller: WorkerController<TestClass>;
 
   beforeEach(() => {
-    controller = new WorkerController(TestClass, <any>window);
+    controller = new WorkerController(TestClass, messageBus);
   });
 
-  it(`Should call the worker factory annotation to create a new worker instance with a non-client config`, () => {
-    const spy = spyOn<any>(
-      TestClass[WorkerAnnotations.Annotation],
-      WorkerAnnotations.Factory
-    ).and.callThrough();
-    controller = new WorkerController(TestClass, <any>window);
+  it('should call the worker factory annotation to create a new worker instance with a non-client config', () => {
+    const spy = jest.spyOn(TestClass[WorkerAnnotations.Annotation], WorkerAnnotations.Factory);
+    controller = new WorkerController(TestClass, messageBus);
     expect(spy).toHaveBeenCalledWith({ isClient: false });
   });
 
-  it(`Should call the handleInit method when a init client request is recieved through onmessage`, () => {
-    const spy = spyOn(controller, 'handleInit');
+  it('should call the handleInit method when a init client request is recieved through onmessage', () => {
+    const spy = jest.spyOn(controller, 'handleInit');
     const initRequest = createRequest(WorkerEvents.Init);
-    window.onmessage(
-      new MessageEvent('mock-event', {
+    messageBus.onmessage(
+      new MessageEvent(MOCK_EVENT, {
         data: initRequest,
       })
     );
     expect(spy).toHaveBeenCalledWith(initRequest);
   });
 
-  it(`Should call the OnWorkerInit hook if implemented`, () => {
-    const spy = spyOn(privateWorker(controller), 'onWorkerInit');
+  it('should call the OnWorkerInit hook if implemented', () => {
+    const spy = jest.spyOn(privateWorker(controller), 'onWorkerInit');
     controller.handleInit(createRequest(WorkerEvents.Init));
     expect(spy).toHaveBeenCalled();
   });
 
   describe('Callables', () => {
-    it(`Should call the handleCallable method when a callable client request is recieved through onmessage`, () => {
-      const spy = spyOn(controller, 'handleCallable');
+    it('should call the handleCallable method when a callable client request is recieved through onmessage', () => {
+      const spy = jest.spyOn(controller, 'handleCallable');
       const callableRequest = createRequest(WorkerEvents.Callable);
-      window.onmessage(
-        new MessageEvent('mock-event', {
+      messageBus.onmessage(
+        new MessageEvent(MOCK_EVENT, {
           data: callableRequest,
         })
       );
       expect(spy).toHaveBeenCalledWith(callableRequest);
     });
 
-    it(`Should call the correct worker method with the arguments from the request`, async () => {
-      const spy = spyOn<any>(privateWorker(controller), 'argsTestFn').and.callThrough();
-      await controller.handleCallable(
-        createRequest(WorkerEvents.Callable, 'argsTestFn', <WorkerCallableBody>{
-          arguments: ['Joe', 2],
-        })
-      );
+    it('should call the correct worker method with the arguments from the request', async () => {
+      const spy = jest.spyOn(privateWorker(controller), 'argsTestFn');
+      const body: WorkerCallableBody = {
+        arguments: ['Joe', 2],
+      };
+      await controller.handleCallable(createRequest(WorkerEvents.Callable, 'argsTestFn', body));
       expect(spy).toHaveBeenCalledWith('Joe', 2);
     });
 
-    it(`Should trigger postMessage with the return value of a sync function`, async () => {
-      const spy = spyOn<any>(window, 'postMessage').and.callThrough();
-      const req = createRequest(WorkerEvents.Callable, 'syncReturnTestFn', <WorkerCallableBody>{
+    it('should trigger postMessage with the return value of a sync function', async () => {
+      const spy = jest.spyOn(messageBus, 'postMessage');
+      const body: WorkerCallableBody = {
         arguments: [],
-      });
+      };
+      const req = createRequest(WorkerEvents.Callable, 'syncReturnTestFn', body);
       await controller.handleCallable(req);
       expect(spy).toHaveBeenCalledWith(createResponse(req, 'sync'));
     });
 
-    it(`Should trigger postMessage with the return value of an async function`, async () => {
-      const spy = spyOn<any>(controller, 'postMessage').and.callThrough();
-      const req = createRequest(WorkerEvents.Callable, 'asyncReturnTestFn', <WorkerCallableBody>{
+    it('should trigger postMessage with the return value of an async function', async () => {
+      const spy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerCallableBody = {
         arguments: [],
-      });
+      };
+      const req = createRequest(WorkerEvents.Callable, 'asyncReturnTestFn', body);
       await controller.handleCallable(req);
       expect(spy).toHaveBeenCalledWith(createResponse(req, 'async'));
     });
 
-    it(`Should transfer the object prototypes for args decorated with a @ShallowTransfer()`, async () => {
-      const spy = spyOn<any>(controller, 'postMessage').and.callThrough();
+    it('should transfer the object prototypes for args decorated with a @ShallowTransfer()', async () => {
+      const spy = jest.spyOn(controller, 'postMessage');
       const user = new TestUser({ name: 'joe', age: 20 });
-      const req = createRequest(WorkerEvents.Callable, 'shallowTransferTestFn', <
-        WorkerCallableBody
-      >{ arguments: [20, user] });
+      const body: WorkerCallableBody = {
+        arguments: [20, user],
+      };
+      const req = createRequest(WorkerEvents.Callable, 'shallowTransferTestFn', body);
       await controller.handleCallable(req);
       expect(spy).toHaveBeenCalledWith(createResponse(req, 41));
     });
 
-    it(`Should catch errors and return as a WorkerResponseEvent through postMessage`, async () => {
-      const spy = spyOn<any>(controller, 'postMessage').and.callThrough();
-      const req = createRequest(WorkerEvents.Callable, 'errorTestFn', <WorkerCallableBody>{
+    it('should catch errors and return as a WorkerResponseEvent through postMessage', async () => {
+      const spy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerCallableBody = {
         arguments: [],
-      });
+      };
+      const req = createRequest(WorkerEvents.Callable, 'errorTestFn', body);
       await controller.handleCallable(req);
-      const callInfo = spy.calls.mostRecent();
-      expect((<any>callInfo.args[0]).isError).toBe(true);
+      expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ isError: true }));
     });
   });
 
   describe('Accessibles', () => {
-    it(`Should call the handleAccessible method when a accessible client request is recieved through onmessage`, () => {
-      const spy = spyOn(controller, 'handleAccessible');
+    it('should call the handleAccessible method when a accessible client request is recieved through onmessage', () => {
+      const spy = jest.spyOn(controller, 'handleAccessible');
       const accessibleRequest = createRequest(WorkerEvents.Accessible);
-      window.onmessage(
-        new MessageEvent('mock-event', {
+      messageBus.onmessage(
+        new MessageEvent(MOCK_EVENT, {
           data: accessibleRequest,
         })
       );
       expect(spy).toHaveBeenCalledWith(accessibleRequest);
     });
 
-    it('Should set the value of the variable in the worker', () => {
-      controller.handleAccessible(
-        createRequest(WorkerEvents.Accessible, 'setTestProp', <WorkerAccessibleBody>{
-          isGet: false,
-          value: 12,
-        })
-      );
+    it('should set the value of the variable in the worker', () => {
+      const body: WorkerAccessibleBody = {
+        isGet: false,
+        value: 12,
+      };
+      controller.handleAccessible(createRequest(WorkerEvents.Accessible, 'setTestProp', body));
       expect(privateWorker(controller).setTestProp).toEqual(12);
     });
 
-    it('Should set the value and transfer prototype of a value when the shallowTransfer option is true', () => {
+    it('should set the value and transfer prototype of a value when the shallowTransfer option is true', () => {
+      const body: WorkerAccessibleBody = {
+        isGet: false,
+        value: new TestUser({ name: 'name', age: 20 }),
+      };
       controller.handleAccessible(
-        createRequest(WorkerEvents.Accessible, 'transferableTestProp', <WorkerAccessibleBody>{
-          isGet: false,
-          value: new TestUser({ name: 'name', age: 20 }),
-        })
+        createRequest(WorkerEvents.Accessible, 'transferableTestProp', body)
       );
-      expect(privateWorker(controller).transferableTestProp.birthday).toBeTruthy();
+      expect(privateWorker(controller).transferableTestProp?.birthday).toBeTruthy();
     });
 
-    it('Should get the value of the variable in the worker and return it through postMessage', () => {
-      const spy = spyOn<any>(controller, 'postMessage').and.callThrough();
-      const req = createRequest(WorkerEvents.Accessible, 'getTestProp', <WorkerAccessibleBody>{
+    it('should get the value of the variable in the worker and return it through postMessage', () => {
+      const spy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerAccessibleBody = {
         isGet: true,
-      });
+      };
+      const req = createRequest(WorkerEvents.Accessible, 'getTestProp', body);
       controller.handleAccessible(req);
       expect(spy).toHaveBeenCalledWith(createResponse(req, 'testvalue'));
     });
   });
 
   describe('Observables', () => {
-    it(`Should call the handleSubscription method when a observable client request is recieved through onmessage`, () => {
-      const spy = spyOn(controller, 'handleSubscription');
+    it('should call the handleSubscription method when a observable client request is recieved through onmessage', () => {
+      const spy = jest.spyOn(controller, 'handleSubscription');
       const subscribableReq = createRequest(WorkerEvents.Observable);
-      window.onmessage(
-        new MessageEvent('mock-event', {
+      messageBus.onmessage(
+        new MessageEvent(MOCK_EVENT, {
           data: subscribableReq,
         })
       );
       expect(spy).toHaveBeenCalledWith(subscribableReq);
     });
 
-    it(`Should should add a subscription to the targeted event subject and add it to the dictionary`, () => {
-      spyOn(controller, 'postMessage');
+    it('should should add a subscription to the targeted event subject and add it to the dictionary', () => {
+      jest.spyOn(controller, 'postMessage');
+      const body: WorkerSubscribableBody = {
+        isUnsubscribe: false,
+        subscriptionKey: 'key123',
+      };
       controller.handleSubscription(
-        createRequest(WorkerEvents.Observable, 'subscriptionTest', <WorkerSubscribableBody>{
-          isUnsubscribe: false,
-          subscriptionKey: 'key123',
-        })
+        createRequest(WorkerEvents.Observable, 'subscriptionTest', body)
       );
       expect(privateWorker(controller).subscriptionTest.observers.length).toEqual(1);
       expect(privateSubscriptionsDict(controller)['key123']).toBeTruthy();
     });
 
-    it(`Should should unsubscribe from the targeted event subject`, () => {
+    it('should should unsubscribe from the targeted event subject', () => {
       privateSubscriptionsDict(controller)['key456'] = privateWorker(
         controller
       ).subscriptionTest.subscribe();
-      spyOn(controller, 'postMessage');
+      jest.spyOn(controller, 'postMessage');
+      const body: WorkerSubscribableBody = {
+        isUnsubscribe: true,
+        subscriptionKey: 'key456',
+      };
       controller.handleSubscription(
-        createRequest(WorkerEvents.Observable, 'subscriptionTest', <WorkerSubscribableBody>{
-          isUnsubscribe: true,
-          subscriptionKey: 'key456',
-        })
+        createRequest(WorkerEvents.Observable, 'subscriptionTest', body)
       );
       expect(privateWorker(controller).subscriptionTest.observers.length).toEqual(0);
       expect(privateSubscriptionsDict(controller)['key456']).toBeFalsy();
     });
 
-    it('Should catch the error when subscribing from an undefined event subject and return the error in the form of a WorkerResponseEvent through postMessage', () => {
-      const spy = spyOn(controller, 'postMessage');
+    it('should catch the error when subscribing from an undefined event subject and return the error in the form of a WorkerResponseEvent through postMessage', () => {
+      const spy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerSubscribableBody = {
+        isUnsubscribe: false,
+        subscriptionKey: 'key456',
+      };
       controller.handleSubscription(
-        createRequest(WorkerEvents.Observable, 'undefinedSubscriptionTest', <
-          WorkerSubscribableBody
-        >{ isUnsubscribe: false, subscriptionKey: 'key456' })
+        createRequest(WorkerEvents.Observable, 'undefinedSubscriptionTest', body)
       );
-      expect((<any>spy.calls.mostRecent().args[0]).isError).toEqual(true);
+      expect(spy).toHaveBeenLastCalledWith(expect.objectContaining({ isError: true }));
     });
 
-    it("Should post an observable message when the subscribed subject's next method is triggered", async () => {
-      const postMessageSpy = spyOn(controller, 'postMessage');
+    it("should post an observable message when the subscribed subject's next method is triggered", () => {
+      const postMessageSpy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerSubscribableBody = {
+        isUnsubscribe: false,
+        subscriptionKey: 'key123',
+      };
       controller.handleSubscription(
-        createRequest(WorkerEvents.Observable, 'subscriptionTest', <WorkerSubscribableBody>{
-          isUnsubscribe: false,
-          subscriptionKey: 'key123',
-        })
+        createRequest(WorkerEvents.Observable, 'subscriptionTest', body)
       );
       expect(postMessageSpy).toHaveBeenCalled();
 
-      const postSubscriptionSpy = spyOn(controller, 'postSubscriptionMessage');
+      const postSubscriptionSpy = jest.spyOn(controller, 'postSubscriptionMessage');
       privateWorker(controller).subscriptionTest.next('value');
-      expect(postSubscriptionSpy).toHaveBeenCalledWith(<
-        WorkerResponseEvent<WorkerObservableMessage>
-      >{
+      expect(postSubscriptionSpy).toHaveBeenCalledWith({
         type: WorkerEvents.ObservableMessage,
         propertyName: 'subscriptionTest',
         isError: false,
@@ -325,21 +337,21 @@ describe('WorkerController: [angular-web-worker]', () => {
       });
     });
 
-    it("Should post an observable message when the subscribed subject's complete method is triggered", async () => {
-      const postMessageSpy = spyOn(controller, 'postMessage');
+    it("should post an observable message when the subscribed subject's complete method is triggered", () => {
+      const postMessageSpy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerSubscribableBody = {
+        isUnsubscribe: false,
+        subscriptionKey: 'key123',
+      };
+
       controller.handleSubscription(
-        createRequest(WorkerEvents.Observable, 'subscriptionTest', <WorkerSubscribableBody>{
-          isUnsubscribe: false,
-          subscriptionKey: 'key123',
-        })
+        createRequest(WorkerEvents.Observable, 'subscriptionTest', body)
       );
       expect(postMessageSpy).toHaveBeenCalled();
 
-      const postSubscriptionSpy = spyOn(controller, 'postSubscriptionMessage');
+      const postSubscriptionSpy = jest.spyOn(controller, 'postSubscriptionMessage');
       privateWorker(controller).subscriptionTest.complete();
-      expect(postSubscriptionSpy).toHaveBeenCalledWith(<
-        WorkerResponseEvent<WorkerObservableMessage>
-      >{
+      expect(postSubscriptionSpy).toHaveBeenCalledWith({
         type: WorkerEvents.ObservableMessage,
         propertyName: 'subscriptionTest',
         isError: false,
@@ -351,25 +363,28 @@ describe('WorkerController: [angular-web-worker]', () => {
       });
     });
 
-    it("Should post an observable message when the subscribed subject's error is fired", async () => {
-      const postMessageSpy = spyOn(controller, 'postMessage');
+    it("should post an observable message when the subscribed subject's error is fired", () => {
+      const postMessageSpy = jest.spyOn(controller, 'postMessage');
+      const body: WorkerSubscribableBody = {
+        isUnsubscribe: false,
+        subscriptionKey: 'key123',
+      };
       controller.handleSubscription(
-        createRequest(WorkerEvents.Observable, 'subscriptionTest', <WorkerSubscribableBody>{
-          isUnsubscribe: false,
-          subscriptionKey: 'key123',
-        })
+        createRequest(WorkerEvents.Observable, 'subscriptionTest', body)
       );
       expect(postMessageSpy).toHaveBeenCalled();
 
-      const postSubscriptionSpy = spyOn(controller, 'postSubscriptionMessage');
+      const postSubscriptionSpy = jest.spyOn(controller, 'postSubscriptionMessage');
       privateWorker(controller).subscriptionTest.error(null);
-      expect(postSubscriptionSpy.calls.mostRecent().args[0].isError).toBe(true);
-      expect(postSubscriptionSpy.calls.mostRecent().args[0].result.type).toBe(
-        WorkerObservableMessageTypes.Error
+      expect(postSubscriptionSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          isError: true,
+          result: expect.objectContaining({ type: WorkerObservableMessageTypes.Error }),
+        })
       );
     });
 
-    it('Should unsubscribe from all subscriptions', () => {
+    it('should unsubscribe from all subscriptions', () => {
       const subject1 = new Subject<any>();
       const subject2 = new Subject<any>();
       controller['subscriptions']['1'] = subject1.subscribe();

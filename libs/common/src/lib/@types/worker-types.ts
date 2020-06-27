@@ -33,13 +33,7 @@ export type NonObservablesOnly<T> = Pick<T, NonObservablePropertyNames<T>>;
  * The class is provided as a generic type argument
  */
 export type ObservablePropertyNames<T> = {
-  [K in keyof T]: T[K] extends
-    | BehaviorSubject<any>
-    | Subject<any>
-    | AsyncSubject<any>
-    | ReplaySubject<any>
-    ? K
-    : never;
+  [K in keyof T]: T[K] extends Subject<any> | undefined ? K : never;
 }[keyof T];
 
 /**

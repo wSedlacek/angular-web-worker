@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import {
-  platformBrowserDynamicTesting,
   BrowserDynamicTestingModule,
+  platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
 
 import { WebWorker } from 'angular-web-worker';
@@ -9,13 +9,15 @@ import { WorkerManager } from 'angular-web-worker/client';
 
 import { WorkerModule } from './worker.module';
 
+// tslint:disable: max-classes-per-file
 @WebWorker()
 class TestClass {}
 
 class UndecoratedTestClass {}
+// tslint:enable: max-classes-per-file
 
 describe('WorkerModule: [angular-web-worker/client]', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     TestBed.resetTestEnvironment();
     TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
   });
@@ -24,7 +26,7 @@ describe('WorkerModule: [angular-web-worker/client]', () => {
     TestBed.configureTestingModule({
       imports: [WorkerModule.forWorkers([{ worker: TestClass, initFn: null }])],
     });
-    const service = TestBed.get(WorkerManager);
+    const service = TestBed.inject(WorkerManager);
     expect(service).toEqual(new WorkerManager([{ worker: TestClass, initFn: null }]));
   });
 

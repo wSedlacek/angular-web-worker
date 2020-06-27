@@ -1,9 +1,9 @@
 import { Accessible, Subscribable } from 'angular-web-worker';
 import {
+  SecretResult,
   WorkerAnnotations,
   WorkerConfig,
   WorkerEvents,
-  SecretResult,
 } from 'angular-web-worker/common';
 import { Subject } from 'rxjs';
 
@@ -11,18 +11,19 @@ import { WebWorker, WorkerFactoryFunctions } from './web-worker.decorator';
 
 @WebWorker()
 class WorkerTestClass {
-  name: string;
+  public name: string;
+
   constructor() {
     this.name = 'Peter';
   }
 }
 
 describe('@WebWorker(): [angular-web-worker]', () => {
-  it('Should attach metadata', () => {
+  it('should attach metadata', () => {
     expect(WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.IsWorker]).toEqual(true);
   });
 
-  it('Should attach metadata with a factory function', () => {
+  it('should attach metadata with a factory function', () => {
     expect(typeof WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.Factory]).toEqual(
       'function'
     );
@@ -33,37 +34,39 @@ describe('@WebWorker(): [angular-web-worker]', () => {
       isClient: false,
     };
 
-    it('Should return a new class instance', () => {
-      const spy = spyOn(WorkerFactoryFunctions, 'setWorkerConfig');
+    it('should return a new class instance', () => {
+      jest.spyOn(WorkerFactoryFunctions, 'setWorkerConfig');
       expect(
         WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.Factory](config)
-      ).toEqual(new WorkerTestClass());
+      ).toEqual(expect.objectContaining(new WorkerTestClass()));
     });
 
-    it('Should call setWorkerConfig with config and new instance', () => {
-      const spy = spyOn(WorkerFactoryFunctions, 'setWorkerConfig');
+    it('should call setWorkerConfig with config and new instance', () => {
+      const spy = jest.spyOn(WorkerFactoryFunctions, 'setWorkerConfig');
       WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.Factory](config);
-      expect(spy).toHaveBeenCalledWith(new WorkerTestClass(), config);
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining(new WorkerTestClass()), config);
     });
 
-    it('Should call WorkerFactoryFunctions.configureAccessibles', () => {
-      const spy = spyOn(WorkerFactoryFunctions, 'configureAccessibles');
+    it('should call WorkerFactoryFunctions.configureAccessibles', () => {
+      const spy = jest.spyOn(WorkerFactoryFunctions, 'configureAccessibles');
       WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.Factory](config);
       expect(spy).toHaveBeenCalled();
     });
 
-    it('Should call WorkerFactoryFunctions.configureSubscribables', () => {
-      const spy = spyOn(WorkerFactoryFunctions, 'configureSubscribables');
+    it('should call WorkerFactoryFunctions.configureSubscribables', () => {
+      const spy = jest.spyOn(WorkerFactoryFunctions, 'configureSubscribables');
       WorkerTestClass[WorkerAnnotations.Annotation][WorkerAnnotations.Factory](config);
       expect(spy).toHaveBeenCalled();
     });
 
     describe('WorkerFactoryFunctions.configureAccessibles()', () => {
+      // tslint:disable: max-classes-per-file
       class AccessibleTestClass {
         @Accessible()
-        public property: string;
-        public property2: string;
+        public property?: string;
+        public property2?: string;
       }
+      // tslint:enable: max-classes-per-file
 
       let clientInstance: AccessibleTestClass;
       let workerInstance: AccessibleTestClass;
@@ -73,21 +76,21 @@ describe('@WebWorker(): [angular-web-worker]', () => {
 
       beforeEach(() => {
         clientInstance = new AccessibleTestClass();
-        clientInstance[WorkerAnnotations.Config] = <WorkerConfig>{
+        clientInstance[WorkerAnnotations.Config] = {
           isClient: true,
           clientSecret: clientSecretKey,
         };
         clientInstance.property = property1Value;
         clientInstance.property2 = property2Value;
-        WorkerFactoryFunctions.configureAccessibles(clientInstance);
+        WorkerFactoryFunctions.configureAccessibles(clientInstance, AccessibleTestClass.prototype);
 
         workerInstance = new AccessibleTestClass();
-        workerInstance[WorkerAnnotations.Config] = <WorkerConfig>{
+        workerInstance[WorkerAnnotations.Config] = {
           isClient: false,
         };
         workerInstance.property = property1Value;
         workerInstance.property2 = property2Value;
-        WorkerFactoryFunctions.configureAccessibles(workerInstance);
+        WorkerFactoryFunctions.configureAccessibles(workerInstance, AccessibleTestClass.prototype);
       });
 
       it('For client instances, it should replace the getter of decorated properties to return a secret', () => {
@@ -100,7 +103,7 @@ describe('@WebWorker(): [angular-web-worker]', () => {
             set: true,
           },
         };
-        expect(<any>clientInstance.property).toEqual(secretResult);
+        expect(clientInstance.property as any).toEqual(secretResult);
       });
 
       it('For client instances, it should not replace the getter of undecorated properties', () => {
@@ -122,11 +125,13 @@ describe('@WebWorker(): [angular-web-worker]', () => {
     });
 
     describe('WorkerFactoryFunctions.configureSubscribables()', () => {
+      // tslint:disable: max-classes-per-file
       class SubscribableTestClass {
         @Subscribable()
-        public event: Subject<any>;
-        public event2: Subject<any>;
+        public event?: Subject<any>;
+        public event2?: Subject<any>;
       }
+      // tslint:enable: max-classes-per-file
 
       let clientInstance: SubscribableTestClass;
       let workerInstance: SubscribableTestClass;
@@ -135,20 +140,26 @@ describe('@WebWorker(): [angular-web-worker]', () => {
 
       beforeEach(() => {
         clientInstance = new SubscribableTestClass();
-        clientInstance[WorkerAnnotations.Config] = <WorkerConfig>{
+        clientInstance[WorkerAnnotations.Config] = {
           isClient: true,
           clientSecret: clientSecretKey,
         };
         clientInstance.event = subjectValue;
         clientInstance.event2 = subjectValue;
-        WorkerFactoryFunctions.configureSubscribables(clientInstance);
+        WorkerFactoryFunctions.configureSubscribables(
+          clientInstance,
+          SubscribableTestClass.prototype
+        );
 
         workerInstance = new SubscribableTestClass();
-        workerInstance[WorkerAnnotations.Config] = <WorkerConfig>{
+        workerInstance[WorkerAnnotations.Config] = {
           isClient: false,
         };
         workerInstance.event = subjectValue;
-        WorkerFactoryFunctions.configureSubscribables(workerInstance);
+        WorkerFactoryFunctions.configureSubscribables(
+          workerInstance,
+          SubscribableTestClass.prototype
+        );
       });
 
       it('For client instances, it should replace the getter of decorated properties to return a secret', () => {
@@ -158,7 +169,7 @@ describe('@WebWorker(): [angular-web-worker]', () => {
           type: WorkerEvents.Observable,
           body: null,
         };
-        expect(<any>clientInstance.event).toEqual(secretResult);
+        expect(clientInstance.event as any).toEqual(secretResult);
       });
 
       it('For client instances, it should not replace the getter of undecorated properties', () => {
@@ -179,7 +190,7 @@ describe('@WebWorker(): [angular-web-worker]', () => {
     });
 
     describe('WorkerFactoryFunctions.setWorkerConfig()', () => {
-      it('Should attach config to class instance', () => {
+      it('should attach config to class instance', () => {
         const instance = new WorkerTestClass();
         WorkerFactoryFunctions.setWorkerConfig(instance, config);
         expect(instance[WorkerAnnotations.Config]).toEqual(config);

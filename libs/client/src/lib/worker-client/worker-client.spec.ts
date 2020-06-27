@@ -1,95 +1,72 @@
-import { WebWorker, Accessible, OnWorkerInit, Callable, Subscribable } from 'angular-web-worker';
+import { Accessible, Callable, OnWorkerInit, Subscribable, WebWorker } from 'angular-web-worker';
 import {
+  ClientWebWorker,
   WorkerClientObservablesDict,
   WorkerClientRequestOpts,
-  ClientWebWorker,
 } from 'angular-web-worker/client';
 import {
-  WorkerAnnotations,
-  WorkerEvents,
   SecretResult,
+  WorkerAnnotations,
+  WorkerEvent,
+  WorkerEvents,
+  WorkerObservableMessageTypes,
   WorkerRequestEvent,
   WorkerResponseEvent,
-  WorkerEvent,
-  WorkerObservableMessageTypes,
 } from 'angular-web-worker/common';
-import { Subject, Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 import { WorkerClient } from './worker-client';
 
+// tslint:disable: max-classes-per-file
 class TestUser {
-  name: string;
-  age: number;
+  public name: string;
+  public age: number;
 
-  constructor(user: Partial<TestUser>) {
+  constructor(user: Pick<TestUser, 'age' | 'name'>) {
     this.age = user.age;
     this.name = user.name;
   }
 
-  birthday() {
-    this.age++;
+  public birthday(): void {
+    this.age += 1;
   }
 }
 
-interface PrivateWorkerClient {
-  observables: <T>(client: WorkerClient<T>) => WorkerClientObservablesDict;
-
-  isSecret: <SecretType extends number, T>(
-    client: WorkerClient<T>,
-    secretResult: any,
-    type: SecretType
-  ) => SecretResult<SecretType>;
-
-  responseEvent: <T>(client: WorkerClient<T>) => Subject<WorkerResponseEvent<any>>;
-
-  worker: <T>(client: WorkerClient<T>) => Worker | ClientWebWorker<T>;
-
-  workerClass: <T>(client: WorkerClient<T>) => T;
-
-  executableWorker: <T>(client: WorkerClient<T>) => T;
-
-  clientSecret: <T>(client: WorkerClient<T>) => string;
-
-  secrets: <T>(client: WorkerClient<T>) => string[];
-
-  setClientSecret: <T>(client: WorkerClient<T>, secret: string) => void;
-
-  sendRequest: <EventType extends number>(
-    client: WorkerClient<TestClass>,
-    type: EventType,
-    opts: WorkerClientRequestOpts<TestClass, EventType, any>
-  ) => Promise<any>;
-
-  fakeConnection: <T>(client: WorkerClient<T>) => Promise<any>;
-}
-
-const PrivateClientUtils: PrivateWorkerClient = {
-  observables: (client) => {
+const PrivateClientUtils = {
+  observables: <T>(client: WorkerClient<T>): WorkerClientObservablesDict => {
     return client['observables'];
   },
 
-  isSecret: (client, result, type) => (<Function>client['isSecret']).apply(client, [result, type]),
+  isSecret: <SecretType extends number, T>(
+    client: WorkerClient<T>,
+    result: any,
+    type: SecretType
+  ): SecretResult<SecretType> | null =>
+    client['isSecret'].apply(client, [result, type]) as SecretResult<SecretType> | null,
 
-  worker: (client) => client['workerRef'],
+  worker: <T>(client: WorkerClient<T>) => client['workerRef'],
 
-  workerClass: (client) => client['worker'],
+  workerClass: <T>(client: WorkerClient<T>): T | null => client['worker'],
 
-  executableWorker: (client) => client['executableWorker'],
+  executableWorker: <T>(client: WorkerClient<T>): T => client['executableWorker'],
 
-  secrets: (client) => client['secrets'],
+  secrets: <T>(client: WorkerClient<T>) => client['secrets'],
 
   responseEvent: <T>(client: WorkerClient<T>) => client['responseEvent'],
 
-  clientSecret: (client) => client['workerSecret'],
+  clientSecret: <T>(client: WorkerClient<T>) => client['workerSecret'],
 
-  setClientSecret: (client, secret) => {
+  setClientSecret: <T>(client: WorkerClient<T>, secret: string): void => {
     client['workerSecret'] = secret;
   },
 
-  sendRequest: (client, type, opts) =>
-    (<Function>client['sendRequest']).apply(client, [type, opts]),
+  sendRequest: async <EventType extends number>(
+    client: WorkerClient<TestClass>,
+    type: EventType,
+    opts: WorkerClientRequestOpts<TestClass, EventType, any>
+  ): Promise<any> => (client['sendRequest'] as Function).apply(client, [type, opts]),
 
-  fakeConnection: async <T>(client: WorkerClient<T>) => {
+  fakeConnection: async <T>(client: WorkerClient<T>): Promise<void> => {
     client.connect();
     await sleep(10);
     client['_isConnected'] = true;
@@ -98,71 +75,80 @@ const PrivateClientUtils: PrivateWorkerClient = {
 
 @WebWorker()
 class TestClass implements OnWorkerInit {
-  undecoratedProperty: string;
-  @Accessible() property1: string;
-  @Accessible() property2: TestUser;
-  @Accessible({ shallowTransfer: true }) property3: TestUser;
-  @Subscribable() event: Subject<string> = new Subject<string>();
+  public undecoratedProperty?: string;
+  @Accessible() public property1?: string;
+  @Accessible() public property2?: TestUser;
+  @Accessible({ shallowTransfer: true }) public property3?: TestUser;
+  @Subscribable() public event: Subject<string> = new Subject<string>();
 
   constructor() {}
 
-  async onWorkerInit() {
+  @Override()
+  public async onWorkerInit(): Promise<void> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(100);
+        resolve();
       }, 100);
     });
   }
 
   @Callable()
-  function1(name: string, age: number): TestUser {
-    return new TestUser({ name: name, age: age });
+  public function1(name: string, age: number): TestUser {
+    return new TestUser({ name, age });
   }
 
   @Callable({ shallowTransfer: true })
-  function2(name: string, age: number): TestUser {
-    return new TestUser({ name: name, age: age });
+  public function2(name: string, age: number): TestUser {
+    return new TestUser({ name, age });
   }
 }
 
 class FakeWorker implements Worker {
-  onmessage(ev: MessageEvent) {}
-  onmessageerror(this: FakeWorker, ev: MessageEvent) {}
-  onerror(err: any) {}
-  postMessage(resp: any) {}
-  addEventListener() {}
-  removeEventListener() {}
-  dispatchEvent(evt: Event): boolean {
+  @Override()
+  public onmessage(_ev: MessageEvent): void {}
+
+  @Override()
+  public onmessageerror(this: Worker, _ev: MessageEvent): void {}
+
+  @Override()
+  public onerror(_err: any): void {}
+
+  @Override()
+  public postMessage(_resp: any): void {}
+
+  @Override()
+  public addEventListener(): void {}
+
+  @Override()
+  public removeEventListener(): void {}
+
+  @Override()
+  public dispatchEvent(_evt: Event): boolean {
     return true;
   }
-  terminate() {}
+
+  @Override()
+  public terminate(): void {}
 }
 
-describe('WorkerClient: [angular-web-worker/client]', () => {
-  function merge<T>(defaultOptions: T, newOptions: Partial<T>): T {
-    const opts: any = {};
-    for (const key in defaultOptions) {
-      if (key) {
-        opts[key] = defaultOptions[key];
-      }
-    }
-    for (const key in newOptions) {
-      if (key) {
-        opts[key] = newOptions[key];
-      }
-    }
-    return opts;
-  }
+// tslint:enable: max-classes-per-file
 
-  function serialize(obj: any): any {
+// tslint:disable-next-line: no-big-function
+describe('WorkerClient: [angular-web-worker/client]', () => {
+  const merge = <T>(defaultOptions: T, newOptions: Partial<T>) => ({
+    ...defaultOptions,
+    ...newOptions,
+  });
+
+  const serialize = <T>(obj: T): T => {
     try {
       return JSON.parse(JSON.stringify(obj));
     } catch (e) {
       throw new Error('Unable to serialize object');
     }
-  }
+  };
 
-  function response<T>(mergeVal?: Partial<WorkerResponseEvent<T>>): WorkerResponseEvent<T> {
+  const response = <T>(mergeVal?: Partial<WorkerResponseEvent<T>>): WorkerResponseEvent<T> => {
     return merge(
       {
         propertyName: 'property1',
@@ -173,7 +159,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       },
       mergeVal ? mergeVal : {}
     );
-  }
+  };
 
   let client: WorkerClient<TestClass>;
   beforeEach(() => {
@@ -181,23 +167,17 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('connect()', () => {
-    it('Should create a secret client key and add it to the secrets array', async () => {
+    it('should create a secret client key and add it to the secrets array', async () => {
       // run in worker
       client.connect();
       await sleep(10);
       expect(PrivateClientUtils.clientSecret(client)).toBeTruthy();
-      expect(PrivateClientUtils.secrets(client)[0]).toEqual(
-        PrivateClientUtils.clientSecret(client)
-      );
+      expect(PrivateClientUtils.secrets(client)).toContain(PrivateClientUtils.clientSecret(client));
     });
 
-    it(`Should call the worker factory annotation to create a new worker instance with a client config`, async () => {
-      const originalFactory = TestClass[WorkerAnnotations.Annotation][WorkerAnnotations.Factory];
+    it(`should call the worker factory annotation to create a new worker instance with a client config`, async () => {
       // run in worker
-      const spy = spyOn<any>(
-        TestClass[WorkerAnnotations.Annotation],
-        WorkerAnnotations.Factory
-      ).and.callThrough();
+      const spy = jest.spyOn(TestClass[WorkerAnnotations.Annotation], WorkerAnnotations.Factory);
       client.connect();
       await sleep(10);
       expect(spy).toHaveBeenCalledWith({
@@ -208,7 +188,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
     });
 
     describe('-> Run in worker', () => {
-      it(`Should create a new instance of the native Worker class`, async () => {
+      it(`should create a new instance of the native Worker class`, async () => {
         const clientRunInWorker = new WorkerClient({
           worker: TestClass,
           initFn: () => new FakeWorker(),
@@ -220,24 +200,27 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
     });
 
     describe('-> Run in app', () => {
-      it(`Should create a new instance of the ClientWebWorker class`, async () => {
+      it(`should create a new instance of the ClientWebWorker class`, async () => {
         client.connect();
         await sleep(10);
         expect(PrivateClientUtils.worker(client) instanceof ClientWebWorker).toEqual(true);
       });
     });
 
-    it(`Should send an init request to the worker which sets the connected flag to true if resolved`, async () => {
-      const spy = spyOn<any>(client, 'sendRequest');
+    it(`should send an init request to the worker which sets the connected flag to true if resolved`, async () => {
+      const spy = jest.spyOn(client as any, 'sendRequest');
       client.connect();
       await sleep(10);
 
-      const spyArgs: [number, WorkerClientRequestOpts<TestClass, WorkerEvents.Init, any>] = <any>(
-        spy.calls.mostRecent().args
+      expect(spy).toHaveBeenCalledWith(
+        WorkerEvents.Init,
+        expect.objectContaining({ isConnect: true })
       );
-      expect(spyArgs[0]).toEqual(WorkerEvents.Init);
-      expect(spyArgs[1].isConnect).toEqual(true);
-      spyArgs[1].resolve();
+      (spy.mock.calls[0][1] as WorkerClientRequestOpts<
+        TestClass,
+        WorkerEvents.Init,
+        any
+      >).resolve?.();
       expect(client.isConnected).toEqual(true);
     });
   });
@@ -255,23 +238,23 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       };
     });
 
-    function event<T>(evt: T): WorkerEvent<WorkerResponseEvent<any>> {
-      return new MessageEvent('TestEvent', {
+    const event = <T>(evt: T): WorkerEvent<WorkerResponseEvent<any>> =>
+      new MessageEvent('TestEvent', {
         data: evt,
       });
-    }
 
-    it('Should trigger the response event when the message is not of the ObservableMessage type', () => {
+    it('should trigger the response event when the message is not of the ObservableMessage type', () => {
       const evt = {
         type: WorkerEvents.Accessible,
         result: 'somevalue',
       };
+      if (!client['responseEvent']) throw new Error('Response Event is undefined');
       const spy = spyOn(client['responseEvent'], 'next');
       worker.onmessage(event(evt));
       expect(spy).toHaveBeenCalledWith(evt as any);
     });
 
-    it('Should trigger the observable subject when a next event is received through an ObservableMessage event', () => {
+    it('should trigger the observable subject when a next event is received through an ObservableMessage event', () => {
       const evt = {
         type: WorkerEvents.ObservableMessage,
         result: {
@@ -285,7 +268,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(spy).toHaveBeenCalledWith('some-value');
     });
 
-    it('Should trigger the observable subject when a complete event is received through an ObservableMessage event', () => {
+    it('should trigger the observable subject when a complete event is received through an ObservableMessage event', () => {
       const evt = {
         type: WorkerEvents.ObservableMessage,
         result: {
@@ -298,7 +281,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(spy).toHaveBeenCalled();
     });
 
-    it('Should trigger the observable subject when an error event is received through an ObservableMessage event', () => {
+    it('should trigger the observable subject when an error event is received through an ObservableMessage event', () => {
       const evt = {
         type: WorkerEvents.ObservableMessage,
         result: {
@@ -314,56 +297,48 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('isSecret()', () => {
-    it('Should return null if the secret result is invalid', () => {
+    it('should return null if the secret result is invalid', () => {
       expect(PrivateClientUtils.isSecret(client, 'asd', WorkerEvents.Accessible)).toEqual(null);
     });
 
-    it('Should return null if the clientSecret does not match', () => {
+    it('should return null if the clientSecret does not match', () => {
       PrivateClientUtils.setClientSecret(client, 'secret');
-      expect(
-        PrivateClientUtils.isSecret(
-          client,
-          <SecretResult<WorkerEvents.Accessible>>{
-            clientSecret: 'not-secret',
-            type: WorkerEvents.Accessible,
-            propertyName: 'property',
-          },
-          WorkerEvents.Accessible
-        )
-      ).toEqual(null);
+      const secret: SecretResult<WorkerEvents.Accessible> = {
+        clientSecret: 'not-secret',
+        type: WorkerEvents.Accessible,
+        propertyName: 'property',
+        body: { get: true, set: true },
+      };
+      expect(PrivateClientUtils.isSecret(client, secret, WorkerEvents.Accessible)).toEqual(null);
     });
 
-    it('Should return null if the secret type does not match', () => {
-      expect(
-        PrivateClientUtils.isSecret(
-          client,
-          <SecretResult<WorkerEvents.Callable>>{
-            clientSecret: 'somesecret',
-            type: WorkerEvents.Callable,
-            propertyName: 'property',
-          },
-          WorkerEvents.Accessible
-        )
-      ).toEqual(null);
+    it('should return null if the secret type does not match', () => {
+      const secret: SecretResult<WorkerEvents.Callable> = {
+        clientSecret: 'somesecret',
+        type: WorkerEvents.Callable,
+        propertyName: 'property',
+        body: { args: [] },
+      };
+      expect(PrivateClientUtils.isSecret(client, secret, WorkerEvents.Accessible)).toEqual(null);
     });
 
-    it('Should return the secret when valid', () => {
+    it('should return the secret when valid', () => {
       PrivateClientUtils.setClientSecret(client, 'secret');
       const secret: SecretResult<WorkerEvents.Accessible> = {
         clientSecret: 'secret',
         type: WorkerEvents.Accessible,
         propertyName: 'property',
-        body: null,
+        body: { get: true, set: true },
       };
       expect(PrivateClientUtils.isSecret(client, secret, WorkerEvents.Accessible)).toEqual(secret);
     });
   });
 
   describe('sendRequest()', () => {
-    function secretResult(
+    const secretResult = (
       workerClient: WorkerClient<TestClass>,
       mergeVal?: Partial<SecretResult<WorkerEvents.Accessible>>
-    ): SecretResult<WorkerEvents.Accessible> {
+    ): SecretResult<WorkerEvents.Accessible> => {
       return merge(
         {
           type: WorkerEvents.Accessible,
@@ -376,28 +351,27 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
+    };
 
-    function requestOpts(
+    const requestOpts = (
       mergeVal?: Partial<WorkerClientRequestOpts<TestClass, any, any>>
-    ): WorkerClientRequestOpts<TestClass, any, any> {
-      return merge(
-        <any>{
+    ): WorkerClientRequestOpts<TestClass, any, any> =>
+      merge(
+        {
           secretError: '',
           isConnect: false,
           workerProperty: (w: TestClass) => w.property1,
           body: () => {
             return { isGet: true };
           },
-        },
+        } as any,
         mergeVal ? mergeVal : {}
       );
-    }
 
-    function request(
+    const request = (
       mergeVal?: Partial<WorkerRequestEvent<WorkerEvents.Accessible>>
-    ): WorkerRequestEvent<WorkerEvents.Accessible> {
-      return merge(
+    ): WorkerRequestEvent<WorkerEvents.Accessible> =>
+      merge(
         {
           propertyName: 'property1',
           requestSecret: 'requestsecret',
@@ -406,7 +380,6 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
 
     let clientRunInWorker: WorkerClient<TestClass>;
     beforeEach(async () => {
@@ -415,7 +388,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       await PrivateClientUtils.fakeConnection(clientRunInWorker);
     });
 
-    it('Should throw an error if the client is not connected and the isConnect option is false', async () => {
+    it('should throw an error if the client is not connected and the isConnect option is false', async () => {
       try {
         client['_isConnected'] = false;
         await PrivateClientUtils.sendRequest(
@@ -432,19 +405,19 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       }
     });
 
-    it('Should not check the secret if no property name has been provided', async () => {
-      const spy = spyOn<any>(client, 'isSecret').and.callThrough();
+    it('should not check the secret if no property name has been provided', async () => {
+      const spy = spyOn(client as any, 'isSecret');
       PrivateClientUtils.sendRequest(
         client,
         WorkerEvents.Accessible,
         requestOpts({ workerProperty: undefined })
-      );
+      ).catch(() => {});
       await sleep(10);
       expect(spy).not.toHaveBeenCalled();
     });
 
-    it('Should check the secret for a property/method if the property is provided as a string', async () => {
-      const spy = spyOn<any>(client, 'isSecret').and.callThrough();
+    it('should check the secret for a property/method if the property is provided as a string', async () => {
+      const spy = spyOn(client as any, 'isSecret');
       PrivateClientUtils.sendRequest(
         client,
         WorkerEvents.Accessible,
@@ -454,31 +427,28 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(spy).toHaveBeenCalledWith(secretResult(client), WorkerEvents.Accessible);
     });
 
-    it('Should check the secret for a property/method if the property is provided as a lambda expression', async () => {
+    it('should check the secret for a property/method if the property is provided as a lambda expression', async () => {
       const spy = spyOn<any>(client, 'isSecret').and.callThrough();
       PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, requestOpts());
       await sleep(10);
       expect(spy).toHaveBeenCalledWith(secretResult(client), WorkerEvents.Accessible);
     });
 
-    it('Should be rejected with the secret error if an undecorated property/method is provided', async () => {
-      try {
-        await PrivateClientUtils.sendRequest(
-          client,
-          WorkerEvents.Accessible,
-          requestOpts({ secretError: 'secret error', workerProperty: (w) => w.undecoratedProperty })
-        );
-      } catch (e) {
-        expect(e).toEqual(new Error('secret error'));
-      }
+    it('should be rejected with the secret error if an undecorated property/method is provided', async () => {
+      const promise = PrivateClientUtils.sendRequest(
+        client,
+        WorkerEvents.Accessible,
+        requestOpts({ secretError: 'secret error', workerProperty: (w) => w.undecoratedProperty })
+      );
+      await expect(promise).rejects.toEqual(new Error('secret error'));
     });
 
-    it('Should run additional conditions, passing in the secret result', async () => {
+    it('should run additional conditions, passing in the secret result', async () => {
       const additionalCondition = {
-        if: (result: SecretResult<any>) => true,
-        reject: (result: SecretResult<any>) => 'rejected condition 1',
+        if: (_result: SecretResult<any>) => true,
+        reject: (_result: SecretResult<any>) => 'rejected condition 1',
       };
-      const spy = spyOn(additionalCondition, 'if').and.callThrough();
+      const spy = jest.spyOn(additionalCondition, 'if');
       PrivateClientUtils.sendRequest(
         client,
         WorkerEvents.Accessible,
@@ -488,185 +458,169 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(spy).toHaveBeenCalledWith(secretResult(client));
     });
 
-    it('Should be rejected if an additional condition fails', async () => {
+    it('should be rejected if an additional condition fails', async () => {
       const additionalCondition = {
-        if: (result: SecretResult<any>) => false,
-        reject: (result: SecretResult<any>) => 'rejected condition 2',
+        if: (_result: SecretResult<any>) => false,
+        reject: (_result: SecretResult<any>) => 'rejected condition 2',
       };
-      const spy = spyOn(additionalCondition, 'reject').and.callThrough();
-      try {
-        await PrivateClientUtils.sendRequest(
-          client,
-          WorkerEvents.Accessible,
-          requestOpts({ additionalConditions: [additionalCondition] })
-        );
-      } catch (e) {
-        expect(spy).toHaveBeenCalledWith(secretResult(client));
-        expect(e).toEqual('rejected condition 2');
-      }
+      const spy = jest.spyOn(additionalCondition, 'reject');
+      const promise = PrivateClientUtils.sendRequest(
+        client,
+        WorkerEvents.Accessible,
+        requestOpts({ additionalConditions: [additionalCondition] })
+      );
+      await expect(promise).rejects.toEqual('rejected condition 2');
+      expect(spy).toHaveBeenCalledWith(secretResult(client));
     });
 
-    it('Should call the beforeRequest option, if provided, with the secret', async () => {
+    it('should call the beforeRequest option, if provided, with the secret', () => {
       const requestOptions = requestOpts({
-        beforeRequest: (secret) => {
-          return 10;
-        },
+        beforeRequest: (_secret) => 10,
       });
-      const spy = spyOn(requestOptions, 'beforeRequest');
+      const spy = jest.spyOn(requestOptions, 'beforeRequest');
       PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, requestOptions);
       expect(spy).toHaveBeenCalledWith(secretResult(client));
     });
 
-    it(`Should subscribe to the response event to receive messages sent back from the worker`, async () => {
-      expect(PrivateClientUtils.responseEvent(clientRunInWorker).observers.length).toEqual(1);
+    it(`should subscribe to the response event to receive messages sent back from the worker`, async () => {
+      expect(PrivateClientUtils.responseEvent(clientRunInWorker)?.observers.length).toEqual(1);
       PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, requestOpts());
       await sleep(10);
-      expect(PrivateClientUtils.responseEvent(clientRunInWorker).observers.length).toEqual(2);
+      expect(PrivateClientUtils.responseEvent(clientRunInWorker)?.observers.length).toEqual(2);
     });
 
-    it('Should add a request secret to the secrets array', async () => {
+    it('should add a request secret to the secrets array', () => {
       expect(PrivateClientUtils.secrets(clientRunInWorker).length).toEqual(2);
       PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, requestOpts());
       expect(PrivateClientUtils.secrets(clientRunInWorker).length).toEqual(3);
     });
 
-    it('Should post a message to the worker', async () => {
-      spyOn<any>(client, 'generateSecretKey').and.returnValue('requestsecret');
-      const spy = spyOn<any>(client, 'postMessage');
+    it('should post a message to the worker', () => {
+      jest.spyOn(client as any, 'generateSecretKey').mockReturnValue('requestsecret');
+      const spy = jest.spyOn(client as any, 'postMessage');
       PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, requestOpts());
       expect(spy).toHaveBeenCalledWith(request());
     });
 
-    it('Should post a message to the worker with the value returned by the body function', async () => {
-      spyOn<any>(client, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should post a message to the worker with the value returned by the body function', async () => {
+      jest.spyOn(client as any, 'generateSecretKey').mockReturnValue('requestsecret');
       const opts = requestOpts({
-        body: (secret) => {
-          return { isGet: false };
-        },
+        body: (_secret) => ({ isGet: false }),
       });
 
       await client.connect();
-      const bodySpy = spyOn(opts, 'body').and.callThrough();
-      const postMessageSpy = spyOn<any>(client, 'postMessage');
+      const bodySpy = jest.spyOn(opts, 'body');
+      const postMessageSpy = jest.spyOn(client as any, 'postMessage');
 
       PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, opts);
-      expect(bodySpy).toHaveBeenCalledWith(secretResult(client), undefined);
-      expect(
-        (<WorkerRequestEvent<WorkerEvents.Accessible>>postMessageSpy.calls.mostRecent().args[0])
-          .body
-      ).toEqual({ isGet: false });
+      expect(bodySpy).toHaveBeenLastCalledWith(secretResult(client), undefined);
+      expect(postMessageSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({ body: { isGet: false } })
+      );
     });
 
-    it('Should pass the value returned by the beforeRequest option, if provided, to the body function', async () => {
-      spyOn<any>(client, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should pass the value returned by the beforeRequest option, if provided, to the body function', () => {
+      jest.spyOn(client as any, 'generateSecretKey').mockReturnValue('requestsecret');
       const opts = requestOpts({
-        body: (secret) => {
-          return { isGet: false };
-        },
+        body: (_secret) => ({ isGet: false }),
         beforeRequest: () => 100,
       });
-      const bodySpy = spyOn(opts, 'body').and.callThrough();
+      const bodySpy = jest.spyOn(opts, 'body');
 
       PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, opts);
       expect(bodySpy).toHaveBeenCalledWith(secretResult(client), 100);
     });
 
-    it('Should map the correct worker response to resolve the promise', async () => {
-      spyOn<any>(client, 'generateSecretKey').and.returnValue('requestsecret');
-      PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, requestOpts()).then(() => {
-        expect(true).toEqual(true);
-      });
-      PrivateClientUtils.worker(client).onmessage(
+    it('should map the correct worker response to resolve the promise', async () => {
+      jest.spyOn(client as any, 'generateSecretKey').mockReturnValue('requestsecret');
+      await PrivateClientUtils.sendRequest(client, WorkerEvents.Accessible, requestOpts());
+      PrivateClientUtils.worker(client)?.onmessage?.(
         new MessageEvent('response', { data: response() })
       );
     }, 1000);
 
-    it('Should unsubscribe from the worker response event after resolved', async () => {
-      spyOn<any>(clientRunInWorker, 'generateSecretKey').and.returnValue('requestsecret');
-      expect(PrivateClientUtils.responseEvent(clientRunInWorker).observers.length).toEqual(1);
-      PrivateClientUtils.sendRequest(
-        clientRunInWorker,
-        WorkerEvents.Accessible,
-        requestOpts()
-      ).then(() => {
-        expect(true).toEqual(true);
-      });
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+    it('should unsubscribe from the worker response event after resolved', async () => {
+      jest.spyOn(clientRunInWorker as any, 'generateSecretKey').mockReturnValue('requestsecret');
+      expect(PrivateClientUtils.responseEvent(clientRunInWorker)?.observers.length).toEqual(1);
+      PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, requestOpts());
+      await sleep(10);
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', { data: response() })
       );
-      expect(PrivateClientUtils.responseEvent(clientRunInWorker).observers.length).toEqual(1);
+      expect(PrivateClientUtils.responseEvent(clientRunInWorker)?.observers.length).toEqual(1);
     }, 1000);
 
-    it('Should remove the request secret from the secrets array when resolved', async () => {
+    it('should remove the request secret from the secrets array when resolved', () => {
       expect(PrivateClientUtils.secrets(clientRunInWorker).length).toEqual(2);
       PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, requestOpts());
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', {
           data: response({ requestSecret: PrivateClientUtils.secrets(clientRunInWorker)[2] }),
         })
       );
-      await sleep(10);
       expect(PrivateClientUtils.secrets(clientRunInWorker).length).toEqual(2);
     });
 
-    it('Should call the resolve option and return its value when the promise is resolved', async () => {
-      spyOn<any>(clientRunInWorker, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should call the resolve option and return its value when the promise is resolved', async () => {
+      jest.spyOn(clientRunInWorker as any, 'generateSecretKey').mockReturnValue('requestsecret');
       const opts = requestOpts({
-        resolve: (resp, secret) => 200,
+        resolve: (_resp, _secret) => 200,
       });
-      const spy = spyOn(opts, 'resolve').and.callThrough();
-      PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, opts).then(
-        (val) => {
-          expect(val).toEqual(200);
-        }
+      const spy = jest.spyOn(opts, 'resolve');
+      const promise = PrivateClientUtils.sendRequest(
+        clientRunInWorker,
+        WorkerEvents.Accessible,
+        opts
       );
-
       await sleep(10);
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', { data: response() })
       );
+      await expect(promise).resolves.toEqual(200);
       expect(spy).toHaveBeenCalledWith(response(), secretResult(clientRunInWorker), undefined);
     }, 1000);
 
-    it('Should pass the value returned by the beforeRequest option, if provided, to the resolve function', async () => {
-      spyOn<any>(clientRunInWorker, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should pass the value returned by the beforeRequest option, if provided, to the resolve function', async () => {
+      jest.spyOn(clientRunInWorker as any, 'generateSecretKey').mockReturnValue('requestsecret');
       const opts = requestOpts({
-        resolve: (resp, secret) => 200,
-        beforeRequest: (secret) => 500,
+        resolve: (_resp, _secret) => 200,
+        beforeRequest: (_secret) => 500,
       });
-      const spy = spyOn(opts, 'resolve').and.callThrough();
+      const spy = jest.spyOn(opts, 'resolve');
       PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, opts);
       await sleep(10);
 
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', { data: response() })
       );
       expect(spy).toHaveBeenCalledWith(response(), secretResult(clientRunInWorker), 500);
     }, 1000);
 
-    it('Should be rejected if the worker returns an error response', async () => {
-      spyOn<any>(client, 'generateSecretKey').and.returnValue('requestsecret');
-      PrivateClientUtils.worker(client).onmessage(
-        new MessageEvent('response', { data: response({ isError: true }) })
-      );
+    it('should be rejected if the worker returns an error response', async () => {
+      jest.spyOn(client as any, 'generateSecretKey').mockReturnValue('requestsecret');
 
       const promise = PrivateClientUtils.sendRequest(
         client,
         WorkerEvents.Accessible,
         requestOpts()
       );
+      await sleep(10);
 
-      await expectAsync(promise).toBeRejected();
+      PrivateClientUtils.worker(client)?.onmessage?.(
+        new MessageEvent('response', { data: response({ isError: true }) })
+      );
+
+      await expect(promise).rejects.toHaveBeenCalled();
     }, 1000);
 
-    it('Should remove the request secret from the secrets array when rejected', async () => {
+    it('should remove the request secret from the secrets array when rejected', async () => {
       expect(PrivateClientUtils.secrets(clientRunInWorker).length).toEqual(2);
       PrivateClientUtils.sendRequest(
         clientRunInWorker,
         WorkerEvents.Accessible,
         requestOpts()
       ).catch((err) => {});
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', {
           data: response({
             requestSecret: PrivateClientUtils.secrets(clientRunInWorker)[2],
@@ -678,28 +632,25 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(PrivateClientUtils.secrets(clientRunInWorker).length).toEqual(2);
     });
 
-    it('Should unsubscribe from the worker response event if the worker responds with an error response', async () => {
-      expect(PrivateClientUtils.responseEvent(clientRunInWorker).observers.length).toEqual(1);
-      spyOn<any>(clientRunInWorker, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should unsubscribe from the worker response event if the worker responds with an error response', async () => {
+      expect(PrivateClientUtils.responseEvent(clientRunInWorker)?.observers.length).toEqual(1);
+      jest.spyOn(clientRunInWorker as any, 'generateSecretKey').mockReturnValue('requestsecret');
       PrivateClientUtils.sendRequest(
         clientRunInWorker,
         WorkerEvents.Accessible,
         requestOpts()
-      ).catch((err) => {});
+      ).catch(() => {});
       await sleep(10);
-
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', { data: response({ isError: true }) })
       );
-      expect(PrivateClientUtils.responseEvent(clientRunInWorker).observers.length).toEqual(1);
+      expect(PrivateClientUtils.responseEvent(clientRunInWorker)?.observers.length).toEqual(1);
     }, 1000);
 
-    it('Should call the beforeReject option if the worker returns an error response', async () => {
-      spyOn<any>(clientRunInWorker, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should call the beforeReject option if the worker returns an error response', async () => {
+      jest.spyOn(clientRunInWorker as any, 'generateSecretKey').mockReturnValue('requestsecret');
       const opts = requestOpts({
-        beforeReject: (resp, secret, context) => {
-          return { isGet: false };
-        },
+        beforeReject: (_resp, _secret, _context) => ({ isGet: false }),
         beforeRequest: () => 100,
       });
       const spy = spyOn(opts, 'beforeReject');
@@ -711,7 +662,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       ).catch(() => {});
       await sleep(10);
 
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', { data: response({ isError: true }) })
       );
       expect(spy).toHaveBeenCalledWith(
@@ -721,19 +672,17 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       );
     }, 1000);
 
-    it('Should not map an incorrect worker response', async () => {
-      spyOn<any>(clientRunInWorker, 'generateSecretKey').and.returnValue('requestsecret');
+    it('should not map an incorrect worker response', async () => {
+      jest.spyOn(clientRunInWorker as any, 'generateSecretKey').mockReturnValue('requestsecret');
       const opts = requestOpts({
-        resolve: (secret) => {
-          return { isGet: false };
-        },
+        resolve: (_secret) => ({ isGet: false }),
       });
-      const spy = spyOn(opts, 'resolve');
+      const spy = jest.spyOn(opts, 'resolve');
 
       PrivateClientUtils.sendRequest(clientRunInWorker, WorkerEvents.Accessible, opts);
       await sleep(10);
 
-      PrivateClientUtils.worker(clientRunInWorker).onmessage(
+      PrivateClientUtils.worker(clientRunInWorker)?.onmessage?.(
         new MessageEvent('response', { data: response({ type: WorkerEvents.Callable }) })
       );
       expect(spy).not.toHaveBeenCalled();
@@ -741,10 +690,10 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('get()', () => {
-    function secretResult(
+    const secretResult = (
       workerClient: WorkerClient<TestClass>,
       mergeVal?: Partial<SecretResult<WorkerEvents.Accessible>>
-    ): SecretResult<WorkerEvents.Accessible> {
+    ): SecretResult<WorkerEvents.Accessible> => {
       return merge(
         {
           type: WorkerEvents.Accessible,
@@ -757,77 +706,77 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
+    };
 
     let opts: WorkerClientRequestOpts<TestClass, WorkerEvents.Accessible, any>;
-    let spy: jasmine.Spy;
+    let spy: jest.SpyInstance;
     beforeEach(async () => {
       await client.connect();
-      spy = spyOn<any>(client, 'sendRequest');
+      spy = jest.spyOn(client as any, 'sendRequest');
       client.get((w) => w.property1);
-      opts = spy.calls.mostRecent().args[1] as WorkerClientRequestOpts<
+      opts = spy.mock.calls[0][1] as WorkerClientRequestOpts<
         TestClass,
         WorkerEvents.Accessible,
         any
       >;
     });
 
-    it('Should pass the worker property lambda to the request', async () => {
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).property1
+    it('should pass the worker property lambda to the request', () => {
+      expect((opts.workerProperty as Function)(PrivateClientUtils.workerClass(client))).toEqual(
+        PrivateClientUtils.workerClass(client)?.property1
       );
     });
 
-    it('Should check that the metadata allows for the get operation to be applied', async () => {
+    it('should check that the metadata allows for the get operation to be applied', () => {
       expect(
-        opts.additionalConditions[0].if(secretResult(client, { body: { get: false, set: true } }))
+        opts.additionalConditions?.[0].if(secretResult(client, { body: { get: false, set: true } }))
       ).toEqual(false);
       expect(
-        opts.additionalConditions[0].if(secretResult(client, { body: { get: true, set: true } }))
+        opts.additionalConditions?.[0].if(secretResult(client, { body: { get: true, set: true } }))
       ).toEqual(true);
     });
 
-    it('Should send the correct request body to the worker', async () => {
-      expect(opts.body(secretResult(client, { body: { get: false, set: true } }))).toEqual({
+    it('should send the correct request body to the worker', () => {
+      expect(opts.body?.(secretResult(client, { body: { get: false, set: true } }))).toEqual({
         isGet: true,
       });
     });
 
-    it('Should resolve with the response result', async () => {
+    it('should resolve with the response result', () => {
       expect(
-        opts.resolve(
+        opts.resolve?.(
           response({ result: 'propertyvalue' }),
           secretResult(client, { body: { get: false, set: true } })
         )
       ).toEqual('propertyvalue');
     });
 
-    it('Should not transfer the prototype of the resolved result if the shallowTransfer option is false or unset', async () => {
+    it('should not transfer the prototype of the resolved result if the shallowTransfer option is false or unset', () => {
       client.get((w) => w.property2);
-      const argOpts = spy.calls.mostRecent().args[1] as WorkerClientRequestOpts<
+      const argOpts = spy.mock.calls[0][1] as WorkerClientRequestOpts<
         TestClass,
         WorkerEvents.Accessible,
         any
       >;
       const user = new TestUser({ name: 'joe soap', age: 20 });
       expect(
-        argOpts.resolve(
+        argOpts.resolve?.(
           response({ result: serialize(user), propertyName: 'property2' }),
           secretResult(client, { body: { get: false, set: true } })
         ).birthday
       ).toBeFalsy();
     });
 
-    it('Should transfer the prototype of the resolved result if the shallowTransfer option is true', async () => {
+    it('should transfer the prototype of the resolved result if the shallowTransfer option is true', () => {
       client.get((w) => w.property3);
-      const argOpts = spy.calls.mostRecent().args[1] as WorkerClientRequestOpts<
+      const argOpts = spy.mock.calls[0][1] as WorkerClientRequestOpts<
         TestClass,
         WorkerEvents.Accessible,
         any
       >;
       const user = new TestUser({ name: 'joe soap', age: 20 });
       expect(
-        argOpts.resolve(
+        argOpts.resolve?.(
           response({ result: serialize(user), propertyName: 'property3' }),
           secretResult(client, { body: { get: false, set: true } })
         ).birthday
@@ -836,11 +785,11 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('set()', () => {
-    function secretResult(
+    const secretResult = (
       workerClient: WorkerClient<TestClass>,
       mergeVal?: Partial<SecretResult<WorkerEvents.Accessible>>
-    ): SecretResult<WorkerEvents.Accessible> {
-      return merge(
+    ): SecretResult<WorkerEvents.Accessible> =>
+      merge(
         {
           type: WorkerEvents.Accessible,
           propertyName: 'property1',
@@ -852,7 +801,6 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
 
     let opts: WorkerClientRequestOpts<TestClass, WorkerEvents.Accessible, any>;
     beforeEach(async () => {
@@ -866,23 +814,25 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       >;
     });
 
-    it('Should pass the worker property lambda to the request', async () => {
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).property1
+    it('should pass the worker property lambda to the request', () => {
+      expect((opts.workerProperty as Function)(PrivateClientUtils.workerClass(client))).toEqual(
+        PrivateClientUtils.workerClass(client)?.property1
       );
     });
 
-    it('Should check that the metadata allows for the set operation to be applied', async () => {
+    it('should check that the metadata allows for the set operation to be applied', () => {
       expect(
-        opts.additionalConditions[0].if(secretResult(client, { body: { get: false, set: false } }))
+        opts.additionalConditions?.[0].if(
+          secretResult(client, { body: { get: false, set: false } })
+        )
       ).toEqual(false);
       expect(
-        opts.additionalConditions[0].if(secretResult(client, { body: { get: false, set: true } }))
+        opts.additionalConditions?.[0].if(secretResult(client, { body: { get: false, set: true } }))
       ).toEqual(true);
     });
 
-    it('Should send the correct request body to the worker', async () => {
-      expect(opts.body(secretResult(client, { body: { get: false, set: true } }))).toEqual({
+    it('should send the correct request body to the worker', () => {
+      expect(opts.body?.(secretResult(client, { body: { get: false, set: true } }))).toEqual({
         isGet: false,
         value: 'value',
       });
@@ -890,10 +840,10 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('call()', () => {
-    function secretResult(
+    const secretResult = (
       workerClient: WorkerClient<TestClass>,
       mergeVal?: Partial<SecretResult<WorkerEvents.Callable>>
-    ): SecretResult<WorkerEvents.Callable> {
+    ): SecretResult<WorkerEvents.Callable> => {
       return merge(
         {
           type: WorkerEvents.Callable,
@@ -905,54 +855,60 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
+    };
 
     let opts: WorkerClientRequestOpts<TestClass, WorkerEvents.Callable, any>;
-    let spy: jasmine.Spy;
+    let spy: jest.SpyInstance;
     beforeEach(async () => {
       await client.connect();
-      spy = spyOn<any>(client, 'sendRequest');
+      spy = jest.spyOn(client as any, 'sendRequest');
       client.call((w) => w.function1('joe soap', 20));
-      opts = spy.calls.mostRecent().args[1];
+      opts = spy.mock.calls[0][1];
     });
 
-    it('Should call the worker method in the lambda expression', async () => {
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).function1('joe soap', 20)
-      );
+    it('should call the worker method in the lambda expression', () => {
+      if (typeof opts.workerProperty !== 'function') {
+        throw new Error('opts.workerProperty is not a function');
+      }
+
+      const worker = PrivateClientUtils.workerClass(client);
+      if (worker === null) throw new Error('Worker is undefined');
+
+      const result = opts.workerProperty(worker);
+      expect(result).toEqual(PrivateClientUtils.workerClass(client)?.function1('joe soap', 20));
     });
 
-    it('Should pass the function arguments as the body', async () => {
-      expect(opts.body(secretResult(client, { body: { args: ['name', 20] } }))).toEqual({
+    it('should pass the function arguments as the body', () => {
+      expect(opts.body?.(secretResult(client, { body: { args: ['name', 20] } }))).toEqual({
         arguments: ['name', 20],
       });
     });
 
-    it('Should resolve with the response result', async () => {
+    it('should resolve with the response result', () => {
       expect(
-        opts.resolve(
+        opts.resolve?.(
           response({ result: 'result', propertyName: 'function1' }),
           secretResult(client)
         )
       ).toEqual('result');
     });
 
-    it('Should not transfer the prototype of the resolved result if the shallowTransfer option is false or unset', async () => {
+    it('should not transfer the prototype of the resolved result if the shallowTransfer option is false or unset', () => {
       const user = new TestUser({ name: 'joe soap', age: 20 });
       expect(
-        opts.resolve(
+        opts.resolve?.(
           response({ result: serialize(user), propertyName: 'function1' }),
           secretResult(client)
         ).birthday
       ).toBeFalsy();
     });
 
-    it('Should transfer the prototype of the resolved result if the shallowTransfer option is true', async () => {
+    it('should transfer the prototype of the resolved result if the shallowTransfer option is true', () => {
       client.call((w) => w.function2('name', 20));
-      opts = spy.calls.mostRecent().args[1];
+      opts = spy.mock.calls[0][1];
       const user = new TestUser({ name: 'joe soap', age: 20 });
       expect(
-        opts.resolve(
+        opts.resolve?.(
           response({ result: serialize(user), propertyName: 'function2' }),
           secretResult(client)
         ).birthday
@@ -961,10 +917,10 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('subscribe()', () => {
-    function secretResult(
+    const secretResult = (
       workerClient: WorkerClient<TestClass>,
       mergeVal?: Partial<SecretResult<WorkerEvents.Observable>>
-    ): SecretResult<WorkerEvents.Observable> {
+    ): SecretResult<WorkerEvents.Observable> => {
       return merge(
         {
           type: WorkerEvents.Observable,
@@ -974,7 +930,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
+    };
 
     let opts: WorkerClientRequestOpts<TestClass, WorkerEvents.Observable, any>;
     beforeEach(async () => {
@@ -991,32 +947,32 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       >;
     });
 
-    it('Should pass the worker subject in the lambda expression', () => {
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).event
+    it('should pass the worker subject in the lambda expression', () => {
+      expect((opts.workerProperty as Function)(PrivateClientUtils.workerClass(client))).toEqual(
+        PrivateClientUtils.workerClass?.(client)?.event
       );
     });
 
-    it('Should pass the correct data in the request body', () => {
-      expect(opts.body(secretResult(client), 'secret-key')).toEqual({
+    it('should pass the correct data in the request body', () => {
+      expect(opts.body?.(secretResult(client), 'secret-key')).toEqual({
         subscriptionKey: 'secret-key',
         isUnsubscribe: false,
       });
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).event
+      expect((opts.workerProperty as Function)(PrivateClientUtils.workerClass(client))).toEqual(
+        PrivateClientUtils.workerClass(client)?.event
       );
     });
 
-    it('Should create a subscription before the request is sent', () => {
-      const spy = spyOn<any>(client, 'createSubscription').and.callThrough();
-      const key = opts.beforeRequest(secretResult(client));
+    it('should create a subscription before the request is sent', () => {
+      const spy = jest.spyOn(client as any, 'createSubscription');
+      const key = opts.beforeRequest?.(secretResult(client));
       expect(spy).toHaveBeenCalled();
-      expect(spy.calls.mostRecent().returnValue).toEqual(key);
+      expect(spy).toReturnWith(key);
     });
 
-    it('Should remove the subscription if rejected', () => {
-      const spy = spyOn<any>(client, 'removeSubscription');
-      const key = opts.beforeReject(
+    it('should remove the subscription if rejected', () => {
+      const spy = jest.spyOn(client as any, 'removeSubscription');
+      opts.beforeReject?.(
         response({ propertyName: 'event' }),
         secretResult(client),
         'subscription-key'
@@ -1024,23 +980,27 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(spy).toHaveBeenCalledWith('subscription-key');
     });
 
-    it('Should resolve with the newly created subscription', () => {
+    it('should resolve with the newly created subscription', () => {
       const subject = new Subject<any>();
       PrivateClientUtils.observables(client)['subscription-key'] = {
+        subject,
         propertyName: 'event',
-        subject: subject,
         subscription: subject.subscribe(),
         observable: null,
       };
       expect(
-        opts.resolve(response({ propertyName: 'event' }), secretResult(client), 'subscription-key')
+        opts.resolve?.(
+          response({ propertyName: 'event' }),
+          secretResult(client),
+          'subscription-key'
+        )
       ).toEqual(subject.subscribe());
     });
 
     describe('createSubscription()', () => {
       const subscriptionMethods = {
-        next: (val: string) => {},
-        error: (err: any) => {},
+        next: (_val: string) => {},
+        error: (_err: any) => {},
         complete: () => {},
       };
 
@@ -1048,7 +1008,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         await client.connect();
       });
 
-      it('Should create a new key and add a new subject and a subscription to the observables dictionary with this key', () => {
+      it('should create a new key and add a new subject and a subscription to the observables dictionary with this key', () => {
         const key = client['createSubscription']('event');
         expect(PrivateClientUtils.observables(client)[key].subject).toBeTruthy();
         expect(PrivateClientUtils.observables(client)[key].subscription).toBeTruthy();
@@ -1089,10 +1049,10 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('observe()', () => {
-    function secretResult(
+    const secretResult = (
       workerClient: WorkerClient<TestClass>,
       mergeVal?: Partial<SecretResult<WorkerEvents.Observable>>
-    ): SecretResult<WorkerEvents.Observable> {
+    ): SecretResult<WorkerEvents.Observable> => {
       return merge(
         {
           type: WorkerEvents.Observable,
@@ -1102,46 +1062,51 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         },
         mergeVal ? mergeVal : {}
       );
-    }
+    };
 
     let opts: WorkerClientRequestOpts<TestClass, WorkerEvents.Observable, any>;
     beforeEach(async () => {
       await client.connect();
-      const spy = spyOn<any>(client, 'sendRequest').and.callThrough();
+      const spy = jest.spyOn(client as any, 'sendRequest');
       client.observe((w) => w.event);
-      opts = spy.calls.mostRecent().args[1] as WorkerClientRequestOpts<
+      opts = spy.mock.calls[0][1] as WorkerClientRequestOpts<
         TestClass,
         WorkerEvents.Observable,
         any
       >;
     });
 
-    it('Should pass the worker subject in the lambda expression', () => {
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).event
-      );
+    it('should pass the worker subject in the lambda expression', () => {
+      if (typeof opts.workerProperty !== 'function') {
+        throw new Error('workerProperty is not a function');
+      }
+
+      const worker = PrivateClientUtils.workerClass(client);
+      if (worker === null) throw new Error('Could not fetch Worker');
+      const result = opts.workerProperty(worker);
+      expect(result).toEqual(PrivateClientUtils.workerClass(client)?.event);
     });
 
-    it('Should pass the correct data in the request body', () => {
-      expect(opts.body(secretResult(client), 'secret-key')).toEqual({
+    it('should pass the correct data in the request body', () => {
+      expect(opts.body?.(secretResult(client), 'secret-key')).toEqual({
         subscriptionKey: 'secret-key',
         isUnsubscribe: false,
       });
-      expect((<Function>opts.workerProperty)(PrivateClientUtils.workerClass(client))).toEqual(
-        PrivateClientUtils.workerClass(client).event
+      expect((opts.workerProperty as Function)(PrivateClientUtils.workerClass(client))).toEqual(
+        PrivateClientUtils.workerClass(client)?.event
       );
     });
 
-    it('Should create an observable before the request is sent', () => {
-      const spy = spyOn<any>(client, 'createObservable').and.callThrough();
-      const key = opts.beforeRequest(secretResult(client));
+    it('should create an observable before the request is sent', () => {
+      const spy = jest.spyOn(client as any, 'createObservable');
+      const key = opts.beforeRequest?.(secretResult(client));
       expect(spy).toHaveBeenCalled();
-      expect(spy.calls.mostRecent().returnValue).toEqual(key);
+      expect(spy).toHaveReturnedWith(key);
     });
 
-    it('Should remove the subscription if rejected', () => {
-      const spy = spyOn<any>(client, 'removeSubscription');
-      const key = opts.beforeReject(
+    it('should remove the subscription if rejected', () => {
+      const spy = jest.spyOn(client as any, 'removeSubscription');
+      opts.beforeReject?.(
         response({ propertyName: 'event' }),
         secretResult(client),
         'subscription-key'
@@ -1149,21 +1114,25 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(spy).toHaveBeenCalledWith('subscription-key');
     });
 
-    it('Should resolve with the newly created observable', () => {
+    it('should resolve with the newly created observable', () => {
       const subject = new Subject<any>();
       PrivateClientUtils.observables(client)['subscription-key'] = {
+        subject,
         propertyName: 'event',
-        subject: subject,
         subscription: null,
         observable: subject.asObservable(),
       };
       expect(
-        opts.resolve(response({ propertyName: 'event' }), secretResult(client), 'subscription-key')
+        opts.resolve?.(
+          response({ propertyName: 'event' }),
+          secretResult(client),
+          'subscription-key'
+        )
       ).toEqual(subject.asObservable());
     });
 
     describe('createObservable()', () => {
-      it('Should create a new key and add a new subject and an observable to the observables dictionary with this key', async () => {
+      it('should create a new key and add a new subject and an observable to the observables dictionary with this key', async () => {
         await client.connect();
         const key = client['createObservable']('event');
         expect(PrivateClientUtils.observables(client)[key].subject).toBeTruthy();
@@ -1173,20 +1142,20 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   });
 
   describe('unsubscribe()', () => {
-    function addObservable(
+    const addObservable = (
       workerClient: WorkerClient<TestClass>,
       key: string,
       propertyName: string,
       subscription: boolean
-    ) {
+    ) => {
       const subject = new Subject<any>();
       PrivateClientUtils.observables(workerClient)[key] = {
-        propertyName: propertyName,
-        subject: subject,
+        propertyName,
+        subject,
         subscription: subscription ? subject.subscribe() : null,
         observable: !subscription ? subject.asObservable() : null,
       };
-    }
+    };
 
     beforeEach(async () => {
       await client.connect();
@@ -1195,50 +1164,49 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       addObservable(client, 'subscription2', 'event3', true);
     });
 
-    it('Should find the property name associated with a subscription and send this in the request', () => {
-      const spy = spyOn<any>(client, 'sendRequest');
-      client.unsubscribe(PrivateClientUtils.observables(client)['subscription2'].subscription);
-      const opts = spy.calls.mostRecent().args[1] as WorkerClientRequestOpts<
-        TestClass,
+    it('should find the property name associated with a subscription and send this in the request', () => {
+      const spy = jest.spyOn(client as any, 'sendRequest').mockImplementation(() => {});
+      const subscription = PrivateClientUtils.observables(client)['subscription2'].subscription;
+      if (subscription !== null) client.unsubscribe(subscription);
+      expect(spy).toHaveBeenLastCalledWith(
         WorkerEvents.Observable,
-        any
-      >;
-      expect(opts.workerProperty).toEqual('event3');
+        expect.objectContaining({ workerProperty: 'event3' })
+      );
     });
 
-    it('Should find the property name associated with an observable and send this in the request', () => {
-      const spy = spyOn<any>(client, 'sendRequest');
-      client.unsubscribe(PrivateClientUtils.observables(client)['observable'].observable);
-      const opts = spy.calls.mostRecent().args[1] as WorkerClientRequestOpts<
-        TestClass,
+    it('should find the property name associated with an observable and send this in the request', () => {
+      const spy = jest.spyOn(client as any, 'sendRequest').mockImplementation(() => {});
+      const observable = PrivateClientUtils.observables(client)['observable'].observable;
+      if (observable !== null) client.unsubscribe(observable);
+      expect(spy).toHaveBeenLastCalledWith(
         WorkerEvents.Observable,
-        any
-      >;
-      expect(opts.workerProperty).toEqual('event2');
+        expect.objectContaining({ workerProperty: 'event2' })
+      );
     });
 
-    it('Should do nothing if the subscription/observable does not exist in the dictionary', () => {
-      const spy = spyOn<any>(client, 'removeSubscription');
-      spyOn<any>(client, 'sendRequest');
+    it('should do nothing if the subscription/observable does not exist in the dictionary', () => {
+      const spy = spyOn(client as any, 'removeSubscription');
+      jest.spyOn(client as any, 'sendRequest');
       const observable = new Observable<any>();
       client.unsubscribe(observable);
       expect(spy).not.toHaveBeenCalled();
     });
 
-    it('Should remove the subscription', () => {
-      spyOn<any>(client, 'sendRequest');
-      const spy = spyOn<any>(client, 'removeSubscription').and.callThrough();
-      client.unsubscribe(PrivateClientUtils.observables(client)['subscription'].subscription);
+    it('should remove the subscription', () => {
+      jest.spyOn(client as any, 'sendRequest').mockImplementation(() => {});
+      const spy = jest.spyOn(client as any, 'removeSubscription');
+      const subscription = PrivateClientUtils.observables(client)['subscription'].subscription;
+      if (subscription !== null) client.unsubscribe(subscription);
       expect(spy).toHaveBeenCalledWith('subscription');
       expect(PrivateClientUtils.observables(client)['subscription']).toBeFalsy();
     });
   });
 });
 
-async function sleep(time) {
+const sleep = async (time: number) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve();
     }, time);
   });
-}
+};

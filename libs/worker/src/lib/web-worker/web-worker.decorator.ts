@@ -10,26 +10,7 @@ import {
 /**
  * Collection of factory functions for the factory as attached to a single object which allows for testing of imported function
  */
-export interface WorkerFactoryFunctionsDict {
-  /**
-   * Attaches a worker configuration to an instance of a worker class
-   * @param instance instance of the worker class
-   * @param config configuration
-   */
-  setWorkerConfig<I>(instance: I, config: WorkerConfig): void;
-  /**
-   * Adds a get wrapper to all properties decorated with `@Accessible()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
-   * @param instance instance of the worker class
-   */
-  configureAccessibles<I, P extends Object>(instance: I, prototype: P): void;
-  /**
-   * Adds a get wrapper to all properties decorated with `@Subscribable()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
-   * @param instance instance of the worker class
-   */
-  configureSubscribables<I, P extends Object>(instance: I, prototype: P): void;
-}
-
-export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
+export const WorkerFactoryFunctions = {
   /**
    * Attaches a worker configuration to an instance of a worker class
    * @param instance instance of the worker class
@@ -43,6 +24,10 @@ export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
     });
   },
 
+  /**
+   * Adds a get wrapper to all properties decorated with `@Accessible()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
+   * @param instance instance of the worker class
+   */
   configureAccessibles: <I, P extends Object>(instance: I, prototype: P) => {
     const accessibles = WorkerUtils.getAnnotation<AccessibleMetaData[]>(
       prototype.constructor,
@@ -87,6 +72,10 @@ export const WorkerFactoryFunctions: WorkerFactoryFunctionsDict = {
     }
   },
 
+  /**
+   * Adds a get wrapper to all properties decorated with `@Subscribable()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
+   * @param instance instance of the worker class
+   */
   configureSubscribables: <I, P extends Object>(instance: I, prototype: P) => {
     const observables = WorkerUtils.getAnnotation<SubscribableMetaData[]>(
       prototype.constructor,

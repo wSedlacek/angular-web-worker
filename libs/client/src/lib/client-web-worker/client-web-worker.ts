@@ -9,13 +9,22 @@ export class ClientWebWorker<T> implements Worker {
   /**
    * Handles execution of code in a worker
    */
-  private controller: WorkerController<T> | null;
+  private controller: WorkerController<T>;
 
   /**
    * Interface for message bus provided into a `WorkerController` allowing the communication mechanism to be interchanged between in-app, and native worker
    * communication mechanisms
    */
-  private readonly messageBus: WorkerMessageBus;
+  private readonly messageBus: WorkerMessageBus = {
+    onmessage: () => {},
+    postMessage: (resp: any) => {
+      this.onmessage(
+        new MessageEvent('ClientWebWorker', {
+          data: this.isTestClient ? this.serialize(resp) : resp,
+        })
+      );
+    },
+  };
 
   /**
    * Creates a new instance of a `ClientWebWorker`
@@ -23,16 +32,6 @@ export class ClientWebWorker<T> implements Worker {
    * @param isTestClient whether the instance is used for testing which will then mock serialization
    */
   constructor(workerType: WebWorkerType<T>, private readonly isTestClient: boolean) {
-    this.messageBus = {
-      onmessage: () => {},
-      postMessage: (resp: any) => {
-        this.onmessage(
-          new MessageEvent('ClientWebWorker', {
-            data: this.isTestClient ? this.serialize(resp) : resp,
-          })
-        );
-      },
-    };
     this.controller = new WorkerController(workerType, this.messageBus);
   }
 
@@ -70,8 +69,8 @@ export class ClientWebWorker<T> implements Worker {
    */
   @Override()
   public terminate(): void {
-    this.controller?.removeAllSubscriptions();
-    this.controller = null;
+    this.controller.removeAllSubscriptions();
+    delete this.controller;
   }
 
   /**

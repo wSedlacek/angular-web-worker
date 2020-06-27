@@ -1,10 +1,11 @@
-import { WorkerAnnotations, AccessibleMetaData } from 'angular-web-worker/common';
+import { AccessibleMetaData, WorkerAnnotations } from 'angular-web-worker/common';
 
 import { Accessible } from './accessible.decorator';
 
+// tslint:disable: max-classes-per-file
 class TestClassWithoutOptions {
   @Accessible()
-  public property: string;
+  public property?: string;
 }
 
 class TestClassWithOptions {
@@ -13,19 +14,20 @@ class TestClassWithOptions {
     set: false,
     shallowTransfer: true,
   })
-  public property: string;
-  public property2: string;
+  public property?: string;
+  public property2?: string;
   constructor() {}
 }
+// tslint:enable: max-classes-per-file
 
 describe('@Accessible(): [angular-web-worker]', () => {
-  it('Should attach metadata to the class prototype', () => {
+  it('should attach metadata to the class prototype', () => {
     expect(
       TestClassWithoutOptions[WorkerAnnotations.Annotation][WorkerAnnotations.Accessibles].length
     ).toEqual(1);
   });
 
-  it('Should attach metadata with the property name', () => {
+  it('should attach metadata with the property name', () => {
     expect(
       (TestClassWithoutOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Accessibles
@@ -33,7 +35,7 @@ describe('@Accessible(): [angular-web-worker]', () => {
     ).toEqual('property');
   });
 
-  it('Should attach metadata with the design type', () => {
+  it('should attach metadata with the design type', () => {
     expect(
       (TestClassWithoutOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Accessibles
@@ -41,7 +43,7 @@ describe('@Accessible(): [angular-web-worker]', () => {
     ).toEqual(String);
   });
 
-  it('Should attach metadata with the default options', () => {
+  it('should attach metadata with the default options', () => {
     expect(
       (TestClassWithoutOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Accessibles

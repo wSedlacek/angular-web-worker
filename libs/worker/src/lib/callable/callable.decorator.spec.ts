@@ -1,35 +1,36 @@
 import {
-  WorkerAnnotations,
   CallableMetaData,
-  WorkerConfig,
   SecretResult,
+  WorkerAnnotations,
   WorkerEvents,
 } from 'angular-web-worker/common';
 
 import { Callable } from './callable.decorator';
 
+// tslint:disable: max-classes-per-file
 class TestClassWithoutOptions {
   @Callable()
-  doSomething(value: string, value2: number): string {
+  public doSomething(value: string, value2: number): string {
     return value + String(value2);
   }
 }
 
 class TestClassWithOptions {
   @Callable({ shallowTransfer: true })
-  doSomething(value: string, value2: number): string {
+  public doSomething(value: string, value2: number): string {
     return value + String(value2);
   }
 }
+// tslint:enable: max-classes-per-file
 
 describe('@Callable(): [angular-web-worker]', () => {
-  it('Should attach metadata to the class prototype', () => {
+  it('should attach metadata to the class prototype', () => {
     expect(
       TestClassWithoutOptions[WorkerAnnotations.Annotation][WorkerAnnotations.Callables].length
     ).toEqual(1);
   });
 
-  it('Should attach metadata with the property name', () => {
+  it('should attach metadata with the property name', () => {
     expect(
       (TestClassWithoutOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Callables
@@ -37,7 +38,7 @@ describe('@Callable(): [angular-web-worker]', () => {
     ).toEqual('doSomething');
   });
 
-  it('Should attach metadata with the return type', () => {
+  it('should attach metadata with the return type', () => {
     expect(
       (TestClassWithoutOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Callables
@@ -45,7 +46,7 @@ describe('@Callable(): [angular-web-worker]', () => {
     ).toEqual(String);
   });
 
-  it('Should attach metadata with the default options', () => {
+  it('should attach metadata with the default options', () => {
     expect(
       (TestClassWithoutOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Callables
@@ -53,7 +54,7 @@ describe('@Callable(): [angular-web-worker]', () => {
     ).toEqual(false);
   });
 
-  it('Should attach metadata with the provided options', () => {
+  it('should attach metadata with the provided options', () => {
     expect(
       (TestClassWithOptions[WorkerAnnotations.Annotation][
         WorkerAnnotations.Callables
@@ -63,7 +64,7 @@ describe('@Callable(): [angular-web-worker]', () => {
 
   it('For client instances, it should replace the function implementation to return a secret', () => {
     const instance = new TestClassWithOptions();
-    instance[WorkerAnnotations.Config] = <WorkerConfig>{
+    instance[WorkerAnnotations.Config] = {
       isClient: true,
       clientSecret: 'my-secret',
     };
@@ -76,19 +77,19 @@ describe('@Callable(): [angular-web-worker]', () => {
         args: ['hello', 1],
       },
     };
-    expect(<any>instance.doSomething('hello', 1)).toEqual(result);
+    expect(instance.doSomething('hello', 1)).toEqual(result);
   });
 
-  it('For worker instances, it should not replace the function implementation', () => {
+  it('should not replace the function implementation for worker instances', () => {
     const instance = new TestClassWithOptions();
-    instance[WorkerAnnotations.Config] = <WorkerConfig>{
+    instance[WorkerAnnotations.Config] = {
       isClient: false,
     };
-    expect(<any>instance.doSomething('twelve', 12)).toEqual('twelve12');
+    expect(instance.doSomething('twelve', 12)).toEqual('twelve12');
   });
 
-  it('For instances where no config has been set, it should not replace the function implementation', () => {
+  it('should not replace the function implementation for instances where no config has been set', () => {
     const instance = new TestClassWithOptions();
-    expect(<any>instance.doSomething('joe', 20)).toEqual('joe20');
+    expect(instance.doSomething('joe', 20)).toEqual('joe20');
   });
 });

@@ -37,7 +37,7 @@ describe('WorkerUtils: [angular-web-worker/common]', () => {
 
   it('Should return the correct value if no annotation exists', () => {
     const undefinedValue = [];
-    expect(WorkerUtils.getAnnotation(cls, annotationProperty)).toEqual(null);
+    expect(() => WorkerUtils.getAnnotation(cls, annotationProperty)).toThrowError();
     expect(WorkerUtils.getAnnotation(cls, annotationProperty, undefinedValue)).toEqual(
       undefinedValue
     );

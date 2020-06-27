@@ -1,19 +1,19 @@
-import { WorkerAnnotations, ShallowTransferParamMetaData } from 'angular-web-worker/common';
+import { ShallowTransferParamMetaData, WorkerAnnotations } from 'angular-web-worker/common';
 
 import { ShallowTransfer } from './shallow-transfer.decorator';
 
 class TestClass {
-  doSomething(name: string, @ShallowTransfer() age: number) {}
+  public doSomething(_name: string, @ShallowTransfer() _age: number): void {}
 }
 
 describe('@ShallowTransfer() [angular-web-worker]', () => {
-  it('Should attach metadata to the class prototype', () => {
+  it('should attach metadata to the class prototype', () => {
     expect(
       TestClass[WorkerAnnotations.Annotation][WorkerAnnotations.ShallowTransferArgs].length
     ).toEqual(1);
   });
 
-  it('Should attach metadata with the method name', () => {
+  it('should attach metadata with the method name', () => {
     expect(
       (TestClass[WorkerAnnotations.Annotation][
         WorkerAnnotations.ShallowTransferArgs
@@ -21,7 +21,7 @@ describe('@ShallowTransfer() [angular-web-worker]', () => {
     ).toEqual('doSomething');
   });
 
-  it('Should attach metadata with the argument type', () => {
+  it('should attach metadata with the argument type', () => {
     expect(
       (TestClass[WorkerAnnotations.Annotation][
         WorkerAnnotations.ShallowTransferArgs
@@ -29,7 +29,7 @@ describe('@ShallowTransfer() [angular-web-worker]', () => {
     ).toEqual(Number);
   });
 
-  it('Should attach metadata with the argument index', () => {
+  it('should attach metadata with the argument index', () => {
     expect(
       (TestClass[WorkerAnnotations.Annotation][
         WorkerAnnotations.ShallowTransferArgs

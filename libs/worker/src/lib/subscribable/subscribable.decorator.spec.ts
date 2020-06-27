@@ -1,11 +1,11 @@
-import { WorkerAnnotations, SubscribableMetaData } from 'angular-web-worker/common';
+import { SubscribableMetaData, WorkerAnnotations } from 'angular-web-worker/common';
 import { Subject } from 'rxjs';
 
 import { Subscribable } from './subscribable.decorator';
 
 class TestClass {
   @Subscribable()
-  public event: Subject<any>;
+  public event: Subject<any> = new Subject();
 }
 
 describe('@Subscribable(): [angular-web-worker]', () => {

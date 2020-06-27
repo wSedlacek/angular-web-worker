@@ -6,7 +6,6 @@ import {
   WorkerEvents,
   WorkerUtils,
 } from 'angular-web-worker/common';
-import 'reflect-metadata';
 
 /**
  * Configurable options for the `@Callable()` decorator, defining how the decorated method is called from a `WorkerClient`.
@@ -31,10 +30,7 @@ export const Callable = (options?: CallableOpts) => <T extends Object, M extends
   propertyKey: T[M] extends (...args: any) => any ? M : never,
   descriptor: TypedPropertyDescriptor<(...args: any[]) => any>
 ) => {
-  const opts = { shallowTransfer: false };
-  if (options) {
-    opts.shallowTransfer = !!options.shallowTransfer;
-  }
+  const opts = { shallowTransfer: options?.shallowTransfer ?? false };
 
   const annotation: CallableMetaData = {
     name: propertyKey,
