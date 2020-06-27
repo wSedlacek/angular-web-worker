@@ -22,16 +22,7 @@
     }
   },
   "projects": {
-    "client": {
-      "tags": []
-    },
-    "common": {
-      "tags": []
-    },
-    "worker": {
-      "tags": []
-    },
-    "testing": {
+    "angular-web-worker": {
       "tags": []
     }
   }

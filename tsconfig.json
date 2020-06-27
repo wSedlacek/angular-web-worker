@@ -19,10 +19,8 @@
     "noImplicitReturns": true,
     "noImplicitAny": false,
     "paths": {
-      "angular-web-worker": ["libs/worker/src/index.ts"],
-      "angular-web-worker/common": ["libs/common/src/index.ts"],
-      "angular-web-worker/client": ["libs/client/src/index.ts"],
-      "angular-web-worker/testing": ["libs/testing/src/index.ts"]
+      "angular-web-worker": ["libs/angular-web-worker/src/index.ts"],
+      "angular-web-worker/*": ["libs/angular-web-worker/src/*"]
     },
     "plugins": [
       {

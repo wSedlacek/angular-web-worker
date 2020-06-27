@@ -1,0 +1,11 @@
+{
+  "name": "angular-web-worker",
+  "version": "2.0.0",
+  "peerDependencies": {
+    "reflect-metadata": ">=0.1.13",
+    "@angular/core": ">=8.0.0"
+  },
+  "dependencies": {
+    "tslib": "^1.10.0"
+  }
+}
