@@ -6,13 +6,10 @@ jobs:
   test-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Master
+      - name: Checkout All Branches
         uses: actions/checkout@v2
         with:
-          ref: master
-
-      - name: Checkout Current Branch
-        uses: actions/checkout@v2
+          fetch-depth: 0
 
       - name: Use Node.js
         uses: actions/setup-node@v1
