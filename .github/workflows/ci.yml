@@ -1,7 +1,9 @@
 name: CI
+
 on: [push]
+
 jobs:
-  setup:
+  test-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -9,21 +11,24 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '12.x'
-      - run: yarn install
+
+      - name: Cache node modules
+        uses: actions/cache@v2
         env:
-          CI: true
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
 
-  test:
-    needs: setup
-    runs-on: ubuntu-latest
+      - name: Install Dependencies
+        run: yarn install
 
-    steps:
-      - run: yarn affected:test
+      - name: Lint Code
+        run: yarn affected:lint
 
-  lint:
-    needs: setup
-    runs-on: ubuntu-latest
-
-    steps:
-      - run: yarn affected:lint
-
+      - name: Run Test
+        run: yarn affected:test
