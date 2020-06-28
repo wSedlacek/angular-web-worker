@@ -24,6 +24,9 @@
   "projects": {
     "angular-web-worker": {
       "tags": []
+    },
+    "samples-basic": {
+      "tags": []
     }
   }
 }
