@@ -1,8 +1,5 @@
-// tslint:disable callable-types
-// tslint:disable variable-name
-
 declare type NoopDecorator = () => (
-  _target: any,
+  _target: object,
   _propertyKey: string,
   _descriptor?: PropertyDescriptor
 ) => void;
@@ -36,14 +33,21 @@ declare global {
       Override: NoopDecorator;
     }
   }
+
+  interface WorkerGlobalScope {
+    override: NoopDecorator;
+    Override: NoopDecorator;
+  }
 }
 
 export const ctx =
-  typeof global === 'undefined' ? (typeof window === 'undefined' ? undefined : window) : global;
+  typeof global === 'undefined' ? (typeof self === 'undefined' ? undefined : self) : global;
 export const override: NoopDecorator = () => () => {
+  // tslint:disable-next-line: comment-type
   /* noop */
 };
 export const Override: NoopDecorator = () => () => {
+  // tslint:disable-next-line: comment-type
   /* noop */
 };
 

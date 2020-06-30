@@ -10,8 +10,11 @@ import { AppWorker } from './app.worker';
   declarations: [AppComponent],
   imports: [
     BrowserModule,
-    WorkerModule.forWorkers([
-      { worker: AppWorker, initFn: () => new Worker('./app.worker.ts', { type: 'module' }) },
+    WorkerModule.forRoot([
+      {
+        target: AppWorker,
+        useWorkerFactory: () => new Worker('./app.worker.ts', { type: 'module' }),
+      },
     ]),
   ],
   providers: [],

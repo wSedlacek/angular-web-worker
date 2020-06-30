@@ -2,7 +2,22 @@
   "extends": "../../tslint.json",
   "rules": {
     "directive-selector": [true, "attribute", "angularWebWorker", "camelCase"],
-    "component-selector": [true, "element", "angular-web-worker", "kebab-case"]
+    "component-selector": [true, "element", "angular-web-worker", "kebab-case"],
+    "explicit-override": false,
+    "only-arrow-functions": false,
+    "function-name": [
+      true,
+      {
+        "method-regex": "^[a-z][\\w\\d]+$",
+        "private-method-regex": "^[a-z][\\w\\d]+$",
+        "protected-method-regex": "^[a-z][\\w\\d]+$",
+        "static-method-regex": "^[a-z][\\w\\d]+$",
+        "function-regex": "^[a-zA-Z][\\w\\d]+$"
+      }
+    ],
+    "no-invalid-this": false,
+    "comment-type": [true, "doc", "singleline", "directive"],
+    "no-duplicate-string": false
   },
   "linterOptions": {
     "exclude": ["!**/*"]

@@ -1,11 +1,6 @@
 import { AsyncSubject, BehaviorSubject, Observable, ReplaySubject, Subject } from 'rxjs';
 
 /**
- * A type interface to specify the prototype of any class that can be used as a web worker when decorated with `@WebWorker()`
- */
-export type WebWorkerType<T> = new (...args: any[]) => T;
-
-/**
  * The names of methods/functions from any class provided as a generic type argument
  */
 export type FunctionPropertyNames<T> = {
@@ -33,7 +28,7 @@ export type NonObservablesOnly<T> = Pick<T, NonObservablePropertyNames<T>>;
  * The class is provided as a generic type argument
  */
 export type ObservablePropertyNames<T> = {
-  [K in keyof T]: T[K] extends Subject<any> | undefined ? K : never;
+  [K in keyof T]: T[K] extends Observable<any> | undefined ? K : never;
 }[keyof T];
 
 /**

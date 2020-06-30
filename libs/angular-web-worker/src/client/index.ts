@@ -1,5 +1,3 @@
-import 'tslint-override/angular-register';
-
 export * from './lib/@types';
 export * from './lib/client-web-worker/client-web-worker';
 export * from './lib/worker-client/worker-client';

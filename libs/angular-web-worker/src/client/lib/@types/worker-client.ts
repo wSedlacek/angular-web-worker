@@ -10,14 +10,6 @@ import {
 } from 'angular-web-worker/common';
 
 /**
- * A dictionary of client observables that have been created to listen to events trigger by RxJS subjects in the worker.
- * The dictionary keys map the the messages that are sent from the worker to a particular observable in the client.
- */
-export interface WorkerClientObservablesDict {
-  [key: string]: WorkerClientObservableRef;
-}
-
-/**
  * A definition of a client observable that listens to events triggered by RxJS subjects in the worker and then triggers events in the browser
  * which depends on which `WorkerClient` method was used to create the listener
  */
@@ -31,11 +23,11 @@ export interface WorkerClientObservableRef {
   /**
    * A subscription to the `WorkerClientObservableRef.subject` which is created and returned by the `WorkerClient.subscribe()` method.
    */
-  subscription: Subscription | null;
+  subscription?: Subscription;
   /**
    *  An observable from the `WorkerClientObservableRef.subject` which is created and returned by the `WorkerClient.observe()` method.
    */
-  observable: Observable<any> | null;
+  observable?: Observable<any>;
   /**
    * The name of the worker's RxJS subject property that the client is listening to
    */
@@ -49,7 +41,7 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
   /**
    * Whether the request is triggered by the init event and therefore not requiring the client's connected property to be true
    */
-  isConnect?: boolean;
+  isConnectionRequest?: boolean;
   /**
    * The worker property to which the request relates. Can be provided as a string, or a lambda function which is used in the `WorkerClient`'s APIs
    */

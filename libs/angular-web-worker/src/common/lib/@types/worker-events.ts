@@ -6,20 +6,29 @@ export enum WorkerEvents {
    * Event type for calling worker methods decorated with `@Callable()`. Triggered in the `WorkerClient.call()` method
    */
   Callable = 1,
+
   /**
    * Event type for accessing worker properties decorated with `@Accessible()`. Triggered in the `WorkerClient.get()` and `WorkerClient.set()` methods
    */
   Accessible = 2,
+
   /**
    * Event type for creating and/or removing subscriptions or observables from RxJS subjects within a worker that are decorated with `@Subscribable()`.
    * Triggered in the `WorkerClient.subscribe()`, `WorkerClient.observe()` and `WorkerClient.unsubscribe()`
    */
   Observable = 3,
+
   /**
    * Event type for observables that are triggered within the worker and delivered to a `WorkerClient` which occurs after a client has subscribed to, or observed a worker subject.
    * This differs from the other events types as it is one-way communication and therefore is not triggered by a request but rather observables in the worker
    */
   ObservableMessage = 4,
+
+  /**
+   * Event type for sending a new value to a subject inside the worker
+   */
+  Next = 6,
+
   /**
    * Event type when the worker script is created in the browser which triggers the `onWorkerInit` life-cycle hook if implemented
    */
@@ -30,7 +39,8 @@ export type WorkerTransmitEvents =
   | WorkerEvents.Callable
   | WorkerEvents.Accessible
   | WorkerEvents.Observable
-  | WorkerEvents.ObservableMessage;
+  | WorkerEvents.ObservableMessage
+  | WorkerEvents.Next;
 
 export type PropertyName = string | number | symbol;
 
@@ -129,7 +139,7 @@ export interface WorkerResponseEvent<T> {
    * The type worker event. Unlike the `WorkerRequestEvent` this does not affect the structure of the response result
    * @see WorkerEvents
    */
-  type: number;
+  type: WorkerEvents;
   /**
    * Name of the worker property/method that originally triggered the event
    */

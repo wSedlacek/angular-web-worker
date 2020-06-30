@@ -1,5 +1,5 @@
 import { WebWorker } from 'angular-web-worker';
-import { WorkerClient, WorkerDefinition } from 'angular-web-worker/client';
+import { FakeWorker } from 'angular-web-worker/testing';
 
 import { WorkerManager } from './worker-manager';
 
@@ -17,17 +17,9 @@ class TestClass2 {
 
 describe('WorkerManager: [angular-web-worker/client]', () => {
   let manager: WorkerManager;
-  const privateWorkerDefinition = (client: WorkerClient<any>): WorkerDefinition => {
-    return client['definition'];
-  };
 
   beforeEach(() => {
-    manager = new WorkerManager([{ worker: TestClass, initFn: null }]);
-  });
-
-  it('Should create a new worker client with a definition', () => {
-    const client = manager.createClient(TestClass);
-    expect(privateWorkerDefinition(client)).toEqual({ worker: TestClass, initFn: null });
+    manager = new WorkerManager([{ target: TestClass, useWorkerFactory: () => new FakeWorker() }]);
   });
 
   it('Should throw an error if the worker class argument does not have a definition', () => {

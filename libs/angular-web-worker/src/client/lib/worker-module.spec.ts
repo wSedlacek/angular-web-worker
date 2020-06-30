@@ -6,6 +6,7 @@ import {
 
 import { WebWorker } from 'angular-web-worker';
 import { WorkerManager } from 'angular-web-worker/client';
+import { FakeWorker } from 'angular-web-worker/testing';
 
 import { WorkerModule } from './worker.module';
 
@@ -22,20 +23,24 @@ describe('WorkerModule: [angular-web-worker/client]', () => {
     TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
   });
 
-  it('Should return a module with a WorkerManager provider ', () => {
+  it('should return a module with a WorkerManager provider ', () => {
     TestBed.configureTestingModule({
-      imports: [WorkerModule.forWorkers([{ worker: TestClass, initFn: null }])],
+      imports: [
+        WorkerModule.forRoot([{ target: TestClass, useWorkerFactory: () => new FakeWorker() }]),
+      ],
     });
     const service = TestBed.inject(WorkerManager);
-    expect(service).toEqual(new WorkerManager([{ worker: TestClass, initFn: null }]));
+    expect(service).toBeTruthy();
   });
 
-  it('Should throw an error when undecorated worker definitions are provided', () => {
-    expect(() =>
-      WorkerModule.forWorkers([
-        { worker: TestClass, initFn: null },
-        { worker: UndecoratedTestClass, initFn: () => null },
-      ])
-    ).toThrowError();
+  it('should throw an error when undecorated worker definitions are provided', () => {
+    TestBed.configureTestingModule({
+      imports: [
+        { target: TestClass, useWorkerFactory: () => new FakeWorker() },
+        { target: UndecoratedTestClass, useWorkerFactory: () => new FakeWorker() },
+      ],
+    });
+
+    expect(() => TestBed.inject(WorkerManager)).toThrowError();
   });
 });

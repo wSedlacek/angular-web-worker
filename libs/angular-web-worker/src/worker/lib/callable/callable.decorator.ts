@@ -48,7 +48,6 @@ export const Callable = (options?: CallableOpts) => <T extends Object, M extends
   ):
     | ReturnType<T[M] extends (...args: unknown[]) => unknown ? T[M] : () => unknown>
     | SecretResult<WorkerEvents.Callable> {
-    // tslint:disable: no-invalid-this
     const config: WorkerConfig = this[WorkerAnnotations.Config];
 
     if (config?.isClient) {
@@ -61,6 +60,5 @@ export const Callable = (options?: CallableOpts) => <T extends Object, M extends
     }
 
     return originalMethod.call(this, ...args);
-    // tslint:enable: no-invalid-this
   };
 };

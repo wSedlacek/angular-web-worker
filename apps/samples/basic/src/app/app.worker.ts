@@ -1,9 +1,24 @@
-import { bootstrapWorker, Callable, OnWorkerInit, WebWorker } from 'angular-web-worker';
-import { Override } from '../register';
+import {
+  Accessible,
+  bootstrapWorker,
+  Callable,
+  OnWorkerInit,
+  Subscribable,
+  WebWorker,
+} from 'angular-web-worker';
+import { interval } from 'rxjs';
+
+import '../register-override';
 
 @WebWorker()
 export class AppWorker implements OnWorkerInit {
   constructor() {}
+
+  @Accessible()
+  public example = 'Work';
+
+  @Subscribable()
+  public events$ = interval(1000);
 
   @Override()
   public onWorkerInit(): void {}

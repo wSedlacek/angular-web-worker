@@ -1,13 +1,15 @@
-import { WebWorkerType } from 'angular-web-worker/common';
+import { OnWorkerInit } from 'angular-web-worker';
+import { Instantiable } from 'angular-web-worker/common';
 
 /**
  * A definition of a worker that is required to create new worker instances
  */
 export interface WorkerDefinition {
   /**
-   * the worker class which has been decorated with `@WebWorker()`
+   * The worker class which has been decorated with `@WebWorker()`
    */
-  worker: WebWorkerType<any>;
+  target: Instantiable<Object> | (Instantiable<Object> & OnWorkerInit);
+
   /**
    * A function that creates a worker. This is required for the webpack `worker-plugin` to bundle the worker separately and is used by a `WorkerClient`
    * to create a new worker
@@ -18,5 +20,5 @@ export interface WorkerDefinition {
    * @example
    * () => new Worker('./app.worker.ts', {type: 'module'})
    */
-  initFn: (() => Worker | null) | null;
+  useWorkerFactory(): Worker;
 }

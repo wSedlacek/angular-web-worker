@@ -1,6 +1,7 @@
 import { WebWorker } from 'angular-web-worker';
 import { createTestClient } from 'angular-web-worker/testing';
 
+import { FakeWorker } from '../mocks';
 import { WorkerTestingClient } from './worker-testing-client';
 
 // tslint:disable: max-classes-per-file
@@ -15,7 +16,10 @@ class UndecoratedClass {}
 describe('WorkerTestingClient: [angular-web-worker/testing]', () => {
   let worker: WorkerTestingClient<TestClass>;
   beforeEach(() => {
-    worker = new WorkerTestingClient<TestClass>({ worker: TestClass, initFn: () => null });
+    worker = new WorkerTestingClient<TestClass>({
+      target: TestClass,
+      useWorkerFactory: () => new FakeWorker(),
+    });
   });
 
   it('should be configured for testing', () => {
@@ -23,8 +27,7 @@ describe('WorkerTestingClient: [angular-web-worker/testing]', () => {
     expect(worker['runInApp']).toEqual(true);
   });
 
-  it('should provide access to the underlying worker instance', async () => {
-    await worker.connect();
+  it('should provide access to the underlying worker instance', () => {
     expect(worker.workerInstance instanceof TestClass).toEqual(true);
   }, 200);
 });

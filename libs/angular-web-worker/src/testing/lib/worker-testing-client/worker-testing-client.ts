@@ -1,5 +1,6 @@
 import { ClientWebWorker, WorkerClient, WorkerDefinition } from 'angular-web-worker/client';
-import { WebWorkerType, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
+import { Instantiable, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
+import { FakeWorker } from '../mocks';
 
 /**
  * **Used for Testing**
@@ -29,12 +30,12 @@ export class WorkerTestingClient<T> extends WorkerClient<T> {
  * Creates a new `TestWorkerClient`
  * @param workerClass worker class
  */
-export const createTestClient = <T>(workerClass: WebWorkerType<T>): WorkerTestingClient<T> => {
+export const createTestClient = <T>(workerClass: Instantiable<T>): WorkerTestingClient<T> => {
   try {
     WorkerUtils.getAnnotation(workerClass, WorkerAnnotations.IsWorker);
   } catch {
     throw new Error('createTestClient: the provided class must be decorated with @WebWorker()');
   }
 
-  return new WorkerTestingClient({ worker: workerClass, initFn: () => null });
+  return new WorkerTestingClient({ target: workerClass, useWorkerFactory: () => new FakeWorker() });
 };

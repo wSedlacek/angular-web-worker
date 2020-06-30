@@ -1,7 +1,8 @@
 import { ModuleWithProviders } from '@angular/core';
 import { WorkerManager, WorkerModule } from 'angular-web-worker/client';
-import { WebWorkerType, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
+import { Instantiable } from 'angular-web-worker/common';
 
+import { TESTING_WORKERS } from './tokens/workers.token';
 import { WorkerTestingManager } from './worker-testing-manager/worker-testing-manager';
 
 /**
@@ -11,20 +12,13 @@ import { WorkerTestingManager } from './worker-testing-manager/worker-testing-ma
  * and from a worker.
  */
 export class WorkerTestingModule {
-  public static forWorkers(workers: WebWorkerType<any>[]): ModuleWithProviders {
-    workers.forEach((wkr) => {
-      try {
-        WorkerUtils.getAnnotation(wkr, WorkerAnnotations.IsWorker);
-      } catch {
-        throw new Error(
-          'WorkerModule: one or more of the provided workers has not been decorated with the @WebWorker decorator'
-        );
-      }
-    });
-
+  public static forRoot(workers: Instantiable<Object>[]): ModuleWithProviders {
     return {
       ngModule: WorkerModule,
-      providers: [{ provide: WorkerManager, useValue: new WorkerTestingManager(workers) }],
+      providers: [
+        { provide: WorkerManager, useClass: WorkerTestingManager },
+        { provide: TESTING_WORKERS, useValue: workers },
+      ],
     };
   }
 }

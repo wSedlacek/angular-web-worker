@@ -1,14 +1,13 @@
-import { WebWorker, WorkerController } from 'angular-web-worker';
+import { WorkerController } from 'angular-web-worker';
+import { MockWorker } from 'angular-web-worker/internal-utils';
 
 import { ClientWebWorker } from './client-web-worker';
 
-@WebWorker()
-export class TestClass {}
-
 describe('ClientWebWorker: [angular-web-worker/client]', () => {
-  let worker: ClientWebWorker<TestClass>;
+  let worker: ClientWebWorker<MockWorker>;
+
   beforeEach(() => {
-    worker = new ClientWebWorker(TestClass, true);
+    worker = new ClientWebWorker(MockWorker, true);
   });
 
   it('should create a web worker controller instance', () => {
@@ -39,7 +38,7 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
     );
   });
 
-  describe('postMessage', () => {
+  describe('.postMessage()', () => {
     it('should serialize if configured for testing', () => {
       const spy = jest.spyOn(worker, 'serialize');
       spyOn(worker['messageBus'], 'onmessage');
@@ -48,14 +47,14 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
     });
 
     it('should not serialize if not configured for testing', () => {
-      worker = new ClientWebWorker(TestClass, false);
+      worker = new ClientWebWorker(MockWorker, false);
       const spy = jest.spyOn(worker, 'serialize');
       worker.postMessage({ bodyProperty: 'value' });
       expect(spy).not.toHaveBeenCalled();
     });
   });
 
-  describe('postMessage', () => {
+  describe('.messageBus.postMessage()', () => {
     it('should serialize if configured for testing', () => {
       const spy = jest.spyOn(worker, 'serialize');
       worker['messageBus'].postMessage({ bodyProperty: 'value' });
@@ -63,7 +62,7 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
     });
 
     it('should not serialize if not configured for testing', () => {
-      worker = new ClientWebWorker(TestClass, false);
+      worker = new ClientWebWorker(MockWorker, false);
       const spy = jest.spyOn(worker, 'serialize');
       worker['messageBus'].postMessage({ bodyProperty: 'value' });
       expect(spy).not.toHaveBeenCalled();

@@ -25,13 +25,17 @@ describe('WorkerTestingModule: [angular-web-worker/testing]', () => {
 
   it('should return a module with a WorkerManager provider with a WorkerTestingManager', () => {
     TestBed.configureTestingModule({
-      imports: [WorkerTestingModule.forWorkers([TestClass])],
+      imports: [WorkerTestingModule.forRoot([TestClass])],
     });
     const service = TestBed.inject(WorkerManager);
     expect(service instanceof WorkerTestingManager).toEqual(true);
   });
 
   it('should throw an error when undecorated worker definitions are provided', () => {
-    expect(() => WorkerTestingModule.forWorkers([TestClass, UndecoratedTestClass])).toThrowError();
+    TestBed.configureTestingModule({
+      imports: [WorkerTestingModule.forRoot([TestClass, UndecoratedTestClass])],
+    });
+
+    expect(() => TestBed.inject(WorkerManager)).toThrowError();
   });
 });

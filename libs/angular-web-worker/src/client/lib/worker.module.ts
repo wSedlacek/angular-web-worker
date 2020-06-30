@@ -1,7 +1,7 @@
 import { ModuleWithProviders, NgModule } from '@angular/core';
-import { WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
 
 import { WorkerDefinition } from './@types';
+import { WORKER_DEFINITIONS } from './tokens/worker.token';
 import { WorkerManager } from './worker-manager/worker-manager';
 
 /**
@@ -21,25 +21,22 @@ export class WorkerModule {
    * webpack `worker-plugin` to bundle the worker separately.
    * @example
    * imports: [
-   *  WorkerModule.forWorkers([
+   *  WorkerModule.forRoot([
    *    {worker: AppWorker, initFn: () => new Worker('./app.worker.ts', {type: 'module'})},
    *  ])
    * ]
    */
-  public static forWorkers(workerDefinitions: WorkerDefinition[]): ModuleWithProviders {
-    workerDefinitions.forEach((definition) => {
-      try {
-        WorkerUtils.getAnnotation(definition.worker, WorkerAnnotations.IsWorker);
-      } catch {
-        throw new Error(
-          'WorkerModule: one or more of the provided workers has not been decorated with the @WebWorker decorator'
-        );
-      }
-    });
-
+  public static forRoot(workerDefinitions: WorkerDefinition[]): ModuleWithProviders<WorkerModule> {
     return {
       ngModule: WorkerModule,
-      providers: [{ provide: WorkerManager, useValue: new WorkerManager(workerDefinitions) }],
+      providers: [WorkerManager, { provide: WORKER_DEFINITIONS, useValue: workerDefinitions }],
+    };
+  }
+
+  public static forFeature(): ModuleWithProviders<WorkerModule> {
+    return {
+      ngModule: WorkerModule,
+      providers: [WorkerManager, { provide: WORKER_DEFINITIONS, useExisting: WORKER_DEFINITIONS }],
     };
   }
 }

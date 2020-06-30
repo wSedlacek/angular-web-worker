@@ -1,5 +1,3 @@
-import 'tslint-override/angular-register';
-
 export * from './lib/accessible/accessible.decorator';
 export * from './lib/callable/callable.decorator';
 export * from './lib/shallow-transfer/shallow-transfer.decorator';

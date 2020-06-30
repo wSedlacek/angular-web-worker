@@ -54,11 +54,13 @@ export class WorkerUtils {
     propertyKey: string,
     ifUndefined?: T
   ): T {
-    if (cls.hasOwnProperty(WorkerAnnotations.Annotation)) {
-      return cls[WorkerAnnotations.Annotation][propertyKey] ?? ifUndefined;
+    if (cls[WorkerAnnotations.Annotation]?.[propertyKey]) {
+      return cls[WorkerAnnotations.Annotation][propertyKey];
     }
 
-    if (ifUndefined === undefined) throw new Error('No default value given!');
+    if (ifUndefined === undefined) {
+      throw new Error('WorkerUtil: No default value given and no value found!');
+    }
 
     return ifUndefined;
   }

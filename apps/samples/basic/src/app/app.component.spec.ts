@@ -1,29 +1,32 @@
-import { TestBed, async } from '@angular/core/testing';
+import { byText, createComponentFactory, Spectator } from '@ngneat/spectator/jest';
+
+import { WorkerTestingModule } from 'angular-web-worker/testing';
+
+import { fakeAsync } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import { AppWorker } from './app.worker';
 
 describe('AppComponent', () => {
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [AppComponent],
-    }).compileComponents();
-  }));
+  let spectator: Spectator<AppComponent>;
+  const createComponent = createComponentFactory({
+    component: AppComponent,
+    imports: [WorkerTestingModule.forRoot([AppWorker])],
+  });
+
+  beforeEach(() => (spectator = createComponent()));
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(spectator.fixture.componentInstance).toBeTruthy();
   });
 
-  it(`should have as title 'samples-basic'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('samples-basic');
-  });
+  it('should update the result after clicking', fakeAsync(() => {
+    const button = spectator.query(byText('Run'));
+    if (button !== null) spectator.click(button);
+    spectator.tick();
+    expect(spectator.component.result).toBe('Work');
+  }));
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to samples-basic!');
-  });
+  it('should update the result after pushing', fakeAsync(() => {
+    throw new Error('Not Implemented');
+  }));
 });

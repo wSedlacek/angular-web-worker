@@ -82,7 +82,7 @@ describe('@WebWorker(): [angular-web-worker]', () => {
         };
         clientInstance.property = property1Value;
         clientInstance.property2 = property2Value;
-        WorkerFactoryFunctions.configureAccessibles(clientInstance, AccessibleTestClass.prototype);
+        WorkerFactoryFunctions.configureAccessibles(clientInstance);
 
         workerInstance = new AccessibleTestClass();
         workerInstance[WorkerAnnotations.Config] = {
@@ -90,7 +90,7 @@ describe('@WebWorker(): [angular-web-worker]', () => {
         };
         workerInstance.property = property1Value;
         workerInstance.property2 = property2Value;
-        WorkerFactoryFunctions.configureAccessibles(workerInstance, AccessibleTestClass.prototype);
+        WorkerFactoryFunctions.configureAccessibles(workerInstance);
       });
 
       it('For client instances, it should replace the getter of decorated properties to return a secret', () => {
@@ -146,20 +146,14 @@ describe('@WebWorker(): [angular-web-worker]', () => {
         };
         clientInstance.event = subjectValue;
         clientInstance.event2 = subjectValue;
-        WorkerFactoryFunctions.configureSubscribables(
-          clientInstance,
-          SubscribableTestClass.prototype
-        );
+        WorkerFactoryFunctions.configureSubscribables(clientInstance);
 
         workerInstance = new SubscribableTestClass();
         workerInstance[WorkerAnnotations.Config] = {
           isClient: false,
         };
         workerInstance.event = subjectValue;
-        WorkerFactoryFunctions.configureSubscribables(
-          workerInstance,
-          SubscribableTestClass.prototype
-        );
+        WorkerFactoryFunctions.configureSubscribables(workerInstance);
       });
 
       it('For client instances, it should replace the getter of decorated properties to return a secret', () => {

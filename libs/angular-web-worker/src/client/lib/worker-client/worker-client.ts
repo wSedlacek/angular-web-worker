@@ -6,6 +6,7 @@ import {
   ObservablesOnly,
   SecretResult,
   WorkerAnnotations,
+  WorkerConfig,
   WorkerEvent,
   WorkerEvents,
   WorkerObservableMessage,
@@ -15,9 +16,10 @@ import {
   WorkerResponseEvent,
   WorkerUtils,
 } from 'angular-web-worker/common';
-import { Observable, Subject, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
+import { catchError, first, timeout } from 'rxjs/operators';
 
-import { WorkerClientObservablesDict, WorkerClientRequestOpts, WorkerDefinition } from '../@types';
+import { WorkerClientObservableRef, WorkerClientRequestOpts, WorkerDefinition } from '../@types';
 import { ClientWebWorker } from '../client-web-worker/client-web-worker';
 
 /**
@@ -29,105 +31,132 @@ export class WorkerClient<T> {
   /**
    * Reference to the browser's worker class for posting messages and terminating the worker
    */
-  private workerRef: Worker | ClientWebWorker<T> | null = null;
+  private readonly workerRef: Worker | ClientWebWorker<T>;
+
   /**
    * The client instance of the worker class
    */
-  private worker: T | null = null;
+  private readonly worker: T;
+
   /**
    * A secret key that must be returned when decorated properties and/or methods are called from the client instance of the worker class
    */
-  private workerSecret?: string;
+  private readonly workerSecret?: string;
+
   /**
    * Array of secret keys containing the `workerSecret` and `WorkerRequestEvent.requestSecret`s ensuring that there are never two of the same keys at any point in time
    */
-  private secrets: string[] = [];
+  private readonly secrets = new Set<string>();
+
   /**
    * An event subject that is triggered each time a response is recieved from a `WorkerController`. This is subscribed to immediately before any request is made in the `sendRequest()` method.
    * This allows the `Worker.onmessage` listener to be mapped back to an async function call from where the request originated
    */
-  private responseEvent?: Subject<WorkerResponseEvent<WorkerEvents.Callable>>;
+  private readonly responseEvent = new Subject<WorkerResponseEvent<WorkerEvents>>();
+
   /**
    * A dictionary of observable references that listen for events triggered by the worker after they have been subscribed or observed through the use of either the `subscribe()` or `observe` methods
    */
-  private observables: WorkerClientObservablesDict = {};
+  private readonly observables = new Map<string, WorkerClientObservableRef>();
+
   /**
    * Whether the worker is active after it is created with the `connect()` method and before it has been terminated by the `destroy()` method
    */
-  private _isConnected = false;
+  private readonly _isConnected$ = new BehaviorSubject(false);
 
   /**
    * Creates a new `WorkerClient`
    * @param definition the worker definition originating from the arguments of the `WorkerModule.forWorkers()` method
    * @param runInApp whether the execution of the worker will occur in the app or within the worker script
    * @param runInApp whether the client is used for unit testing which determines if serialization should be mocked
+   *
+   * Creates a new worker script in the browser, or within the app, and triggers the `OnWorkerInit` hook, if implemented.
+   * If the hook is implemented the promise will only be resolved once `onWorkerInit` method has completed regardless of whether
+   * it is async or not
    */
   constructor(
     private readonly definition: WorkerDefinition,
     private readonly runInApp: boolean = false,
     private readonly isTestClient: boolean = false
-  ) {}
+  ) {
+    this.workerSecret = this.generateSecretKey();
+    const workerFactory = WorkerUtils.getAnnotation<(config: WorkerConfig) => T>(
+      this.definition.target,
+      WorkerAnnotations.Factory
+    );
+    this.worker = workerFactory({
+      isClient: true,
+      clientSecret: this.workerSecret,
+    });
 
-  /**
-   * Creates a new worker script in the browser, or within the app, and triggers the `OnWorkerInit` hook, if implemented. If the hook is implemented the promise will only be resolved once `onWorkerInit` method
-   * has completed regardless of whether it is async or not
-   *
-   * This method must called before any worker methods and/or properties can be called/accessed
-   */
-  public async connect(): Promise<void> {
-    if (!this._isConnected) {
-      this.secrets = [];
-      this.workerSecret = this.generateSecretKey();
-      this.worker = WorkerUtils.getAnnotation<Function>(
-        this.definition.worker,
-        WorkerAnnotations.Factory
-      )?.({
-        isClient: true,
-        clientSecret: this.workerSecret,
-      });
+    this.workerRef = !this.runInApp
+      ? this.definition.useWorkerFactory()
+      : new ClientWebWorker(this.definition.target, this.isTestClient);
 
-      this.workerRef = !this.runInApp
-        ? this.definition.initFn?.() ?? null
-        : new ClientWebWorker(this.definition.worker, this.isTestClient);
+    this.registerEvents();
 
-      this.registerEvents();
-
-      return this.castPromise(
-        this.sendRequest(WorkerEvents.Init, {
-          body: () => null,
-          isConnect: true,
-          resolve: () => {
-            this._isConnected = true;
-
-            return;
-          },
-          secretError: 'Could not initialize worker',
-        })
-      );
-    }
+    this.castPromise(
+      this.sendRequest(WorkerEvents.Init, {
+        body: () => null,
+        isConnectionRequest: true,
+        resolve: () => {
+          this._isConnected$.next(true);
+        },
+        secretError: 'Could not initialize worker',
+      })
+    );
   }
 
   /**
    * Terminates the worker and unsubscribes from any subscriptions created from the `subscribe()` method
    */
   public destroy(): void {
-    if (this.isConnected) {
-      for (const key of Object.keys(this.observables)) {
+    // TODO: Goals
+    // Change _isConnected to _isDestroyed
+    // Throw an error if a request is attempted after destruction
+    // In order to startup again a new instance will be needed
+    if (this._isConnected$.getValue()) {
+      for (const key of this.observables.keys()) {
         this.removeSubscription(key);
       }
-      this.workerRef?.terminate();
-      this.secrets = [];
-      this.observables = {};
-      this.worker = null;
-      this._isConnected = false;
+      this.workerRef.terminate();
+      this.secrets.clear();
+      this.observables.clear();
+      this._isConnected$.next(false);
     }
   }
 
   /**
-   * Whether the worker is active after it is created with the `connect()` method and before it has been terminated by the `destroy()` method
+   * Whether the worker is active after it is created after initialization and before it has been terminated by the `destroy()` method
    */
-  get isConnected(): boolean {
-    return this._isConnected;
+  public get isConnected(): boolean {
+    return this._isConnected$.getValue();
+  }
+
+  /**
+   * Emitted whenever `isConnected` changes
+   * @see isConnected
+   */
+  public get isConnected$(): Observable<boolean> {
+    return this._isConnected$.asObservable();
+  }
+
+  /**
+   * Waits for connection to client for up to 1 second. If a connection could not be
+   * established then a timeout error will be thrown
+   */
+  public get connectionCompleted(): Promise<boolean> {
+    return this._isConnected$
+      .pipe(
+        first((connection) => connection),
+        timeout(1000),
+        catchError(() => {
+          throw new Error(
+            'WorkerClient: Timeout, could not establish a connection to the client... Try again later?'
+          );
+        })
+      )
+      .toPromise();
   }
 
   /**
@@ -169,7 +198,7 @@ export class WorkerClient<T> {
       },
       resolve: (resp) => {
         const metaData = WorkerUtils.getAnnotation<AccessibleMetaData[]>(
-          this.definition.worker,
+          this.definition.target,
           WorkerAnnotations.Accessibles
         ).find((x) => x.name === resp?.propertyName);
 
@@ -254,7 +283,7 @@ export class WorkerClient<T> {
       },
       resolve: (resp) => {
         const metaData = WorkerUtils.getAnnotation<CallableMetaData[]>(
-          this.definition.worker,
+          this.definition.target,
           WorkerAnnotations.Callables,
           []
         ).find((x) => x.name === resp?.propertyName);
@@ -321,7 +350,7 @@ export class WorkerClient<T> {
         body: (_secret, key) => {
           return { isUnsubscribe: false, subscriptionKey: key };
         },
-        resolve: (_resp, _secret, key) => this.observables[key].subscription,
+        resolve: (_resp, _secret, key) => this.observables.get(key)?.subscription,
         beforeReject: (_resp, _secret, key) => this.removeSubscription(key),
       })
     );
@@ -364,7 +393,7 @@ export class WorkerClient<T> {
           'WorkerClient: only methods decorated with @Callable() can be used in the call method',
         beforeRequest: (secret) => this.createObservable(secret.propertyName),
         body: (_secret, key) => ({ isUnsubscribe: false, subscriptionKey: key }),
-        resolve: (_resp, _secret, key) => this.observables[key].observable,
+        resolve: (_resp, _secret, key) => this.observables.get(key)?.observable,
         beforeReject: (_resp, _secret, key) => this.removeSubscription(key),
       })
     );
@@ -376,23 +405,22 @@ export class WorkerClient<T> {
    * @param subscriptionOrObservable The observable or subscription that must be disposed of
    */
   public async unsubscribe(
-    subscriptionOrObservable: Subscription | Observable<any>
+    subscriptionOrObservable: Subscription | Observable<unknown>
   ): Promise<void> {
-    const key = this.findObservableKey(subscriptionOrObservable);
-    if (key !== null) {
-      const propertyName: string = this.observables[key].propertyName;
+    const entry = this.findObservableEntry(subscriptionOrObservable);
+    if (entry !== null) {
+      const [key, ref] = entry;
+      const workerProperty = ref.propertyName;
       this.removeSubscription(key);
 
       return this.castPromise(
         this.sendRequest(WorkerEvents.Observable, {
-          workerProperty: propertyName,
+          workerProperty,
           secretError: '',
           body: () => ({ isUnsubscribe: true, subscriptionKey: key }),
         })
       );
     }
-
-    return new Promise((resolve) => resolve());
   }
 
   /**
@@ -400,19 +428,25 @@ export class WorkerClient<T> {
    * @param type the type of worker event
    * @param opts Configurable options that defines how the request is sent and how the response is handled
    */
-  private sendRequest<EventType extends number, ReturnType>(
+  private sendRequest<EventType extends WorkerEvents, ReturnType>(
     type: EventType,
     opts: WorkerClientRequestOpts<T, EventType, ReturnType>
   ): ReturnType extends Promise<any> ? ReturnType : Promise<ReturnType> {
-    const promise = new Promise((resolve, reject) => {
-      if (this.worker !== null && (this._isConnected || opts.isConnect)) {
+    // TODO: Goals
+    // SEND THE REQUEST with this.postMessage();
+    // If the the WorkerEvent is `Callable` OR `Accessible` then a promise should be returned
+    // If the WorkerEvent is `Observable` then an observable should be returned
+    // Otherwise void should be returned
+
+    const promise = new Promise(async (resolve, reject) => {
+      if (opts.isConnectionRequest || (await this.connectionCompleted)) {
         try {
           const noProperty = opts.workerProperty === undefined;
           const secretResult = noProperty
             ? null
             : this.isSecret(
                 typeof opts.workerProperty === 'string'
-                  ? this.worker?.[opts.workerProperty]
+                  ? this.worker[opts.workerProperty]
                   : opts.workerProperty?.(this.worker),
                 type
               );
@@ -420,7 +454,7 @@ export class WorkerClient<T> {
             // additional checks ---
             if (opts.additionalConditions) {
               for (const opt of opts.additionalConditions) {
-                if (!opt.if?.(secretResult)) {
+                if (!opt.if(secretResult)) {
                   reject(opt.reject(secretResult));
 
                   return;
@@ -429,17 +463,17 @@ export class WorkerClient<T> {
             }
 
             // additional functionality ---
-            let additionalContext: any;
-            if (opts.beforeRequest && secretResult !== null) {
-              additionalContext = opts.beforeRequest(secretResult);
-            }
+            const additionalContext =
+              opts.beforeRequest && secretResult !== null
+                ? opts.beforeRequest(secretResult)
+                : undefined;
 
             // response ----
             const requestSecret = this.generateSecretKey();
-            const responseSubscription = this.responseEvent?.subscribe((resp) => {
+            const responseSubscription = this.responseEvent.subscribe((resp) => {
               try {
                 let isValidResponse =
-                  resp.type === (type as number) && resp.requestSecret === requestSecret;
+                  resp.type === (type as WorkerEvents) && resp.requestSecret === requestSecret;
                 isValidResponse = noProperty
                   ? isValidResponse
                   : isValidResponse && secretResult?.propertyName === resp.propertyName;
@@ -453,14 +487,14 @@ export class WorkerClient<T> {
                     } else {
                       resolve();
                     }
-                    responseSubscription?.unsubscribe();
+                    responseSubscription.unsubscribe();
                   } else {
                     // reject -----
                     this.removeSecretKey(requestSecret);
                     if (opts.beforeReject && secretResult !== null) {
                       opts.beforeReject(resp, secretResult, additionalContext);
                     }
-                    responseSubscription?.unsubscribe();
+                    responseSubscription.unsubscribe();
                     if (resp.error) reject(JSON.parse(resp.error));
                     else reject();
                   }
@@ -471,25 +505,18 @@ export class WorkerClient<T> {
             });
 
             // send request -----
-            const req: WorkerRequestEvent<EventType> = {
+            this.postMessage({
               type,
               requestSecret,
               propertyName: noProperty || secretResult === null ? null : secretResult?.propertyName,
               body: opts.body ? opts.body(secretResult, additionalContext) : null,
-            };
-            this.postMessage(req);
+            });
           } else {
             reject(new Error(opts.secretError));
           }
         } catch (e) {
           reject(e);
         }
-      } else {
-        reject(
-          new Error(
-            'WorkerClient: the WorkerClient.connect() method must be called before a worker can be accessed'
-          )
-        );
       }
     });
 
@@ -502,7 +529,7 @@ export class WorkerClient<T> {
    */
   private postMessage<EventType extends number>(request: WorkerRequestEvent<EventType>): void {
     try {
-      this.workerRef?.postMessage(request);
+      this.workerRef.postMessage(request);
     } catch (e) {
       throw new Error('Unable to serialize the request from the client to the worker');
     }
@@ -511,6 +538,8 @@ export class WorkerClient<T> {
   /**
    * A utility function to cast promises
    * @param promise promise to cast
+   *
+   * TODO: REMOVE THE NEED FOR THIS FUNCTION
    */
   private readonly castPromise = async <PromiseType>(
     promise: Promise<any>
@@ -534,12 +563,11 @@ export class WorkerClient<T> {
     const key = this.generateSubscriptionKey(propertyName);
     const subject = new Subject<any>();
     const subscription = subject.subscribe(next, error, complete);
-    this.observables[key] = {
+    this.observables.set(key, {
       subject,
       subscription,
       propertyName,
-      observable: null,
-    };
+    });
 
     return key;
   }
@@ -551,28 +579,28 @@ export class WorkerClient<T> {
   private createObservable(propertyName: string): string {
     const key = this.generateSubscriptionKey(propertyName);
     const subject = new Subject<any>();
-    this.observables[key] = {
+    this.observables.set(key, {
       subject,
       propertyName,
-      subscription: null,
       observable: subject.asObservable(),
-    };
+    });
 
     return key;
   }
 
   /**
-   * Iterates through the `observables` dictionary to find the associated key for a particular subscription or observable. Returns null if no match is found
+   * Iterates through the `observables` dictionary to find the associated entry for a particular subscription or observable. Returns null if no match is found
    * @param value Subscription or observable for which the dictionary key must be found
    */
-  private findObservableKey(value: Subscription | Observable<any>): string | null {
-    for (const key of Object.keys(this.observables)) {
-      if (value instanceof Subscription && this.observables[key].subscription === value) {
-        return key;
-      }
-
-      if (value instanceof Observable && this.observables[key].observable === value) {
-        return key;
+  private findObservableEntry(
+    value: Subscription | Observable<unknown>
+  ): [string, WorkerClientObservableRef] | null {
+    for (const [key, item] of this.observables.entries()) {
+      if (
+        (value instanceof Subscription && item.subscription === value) ||
+        (value instanceof Observable && item.observable === value)
+      ) {
+        return [key, item];
       }
     }
 
@@ -581,11 +609,11 @@ export class WorkerClient<T> {
 
   /**
    * Remove a subscription or observable reference from `observables` dictionary. Removed subscriptions are unsubscribed before destroyed
-   * @param subscriptionKey unique key in the `observables` dictionary
+   * @param key unique key in the `observables` dictionary
    */
-  private removeSubscription(subscriptionKey: string): void {
-    this.observables[subscriptionKey]?.subscription?.unsubscribe();
-    delete this.observables[subscriptionKey];
+  private removeSubscription(key: string): void {
+    this.observables.get(key)?.subscription?.unsubscribe();
+    this.observables.delete(key);
   }
 
   /**
@@ -606,7 +634,7 @@ export class WorkerClient<T> {
    */
   private generateSubscriptionKey(propertyName: string): string {
     let key = this.generateKey(propertyName, 6);
-    while (this.observables[key] !== undefined) {
+    while (this.observables.get(key) !== undefined) {
       key = this.generateKey(propertyName, 6);
     }
 
@@ -620,10 +648,10 @@ export class WorkerClient<T> {
    */
   private generateSecretKey(propertyName: string = 'client'): string {
     let key = this.generateKey(propertyName, 16);
-    while (this.secrets.indexOf(key) !== -1) {
+    while (this.secrets.has(key)) {
       key = this.generateKey(propertyName, 16);
     }
-    this.secrets.push(key);
+    this.secrets.add(key);
 
     return key;
   }
@@ -633,9 +661,7 @@ export class WorkerClient<T> {
    * @param secret unique key to be removed
    */
   private removeSecretKey(secret: string): void {
-    if (this.secrets.indexOf(secret) !== -1) {
-      this.secrets.splice(this.secrets.indexOf(secret), 1);
-    }
+    this.secrets.delete(secret);
   }
 
   /**
@@ -645,7 +671,7 @@ export class WorkerClient<T> {
    * @param type the worker event type that originated the request
    */
   private isSecret<SecretType extends number>(
-    secretResult: any,
+    secretResult: any | SecretResult<SecretType>,
     type: SecretType
   ): SecretResult<SecretType> | null {
     if (
@@ -666,35 +692,29 @@ export class WorkerClient<T> {
    * Creates the event listeners to listen for, and handle, messages recieved through `Worker.onmessage`
    */
   private registerEvents(): void {
-    this.responseEvent = new Subject<WorkerResponseEvent<WorkerEvents.Callable>>();
-    this.observables = {};
-
-    if (this.workerRef === null || this.workerRef === undefined) {
-      throw new Error('Worker Ref is not defined');
-    }
-
     this.workerRef.onmessage = (
       ev: WorkerEvent<WorkerResponseEvent<WorkerObservableMessage | WorkerEvents.Callable>>
     ) => {
       const body = ev.data.result as WorkerObservableMessage | null;
       if (ev.data.type === WorkerEvents.ObservableMessage && body?.key) {
-        if (this.observables[body.key] !== undefined) {
+        const observable = this.observables.get(body.key);
+        if (observable) {
           switch (body.type) {
             case WorkerObservableMessageTypes.Next:
-              this.observables[body.key].subject.next(body.value);
+              observable.subject.next(body.value);
               break;
             case WorkerObservableMessageTypes.Error:
-              this.observables[body.key].subject.error(body.error);
+              observable.subject.error(body.error);
               break;
             case WorkerObservableMessageTypes.Complete:
-              this.observables[body.key].subject.complete();
+              observable.subject.complete();
               break;
             default:
               break;
           }
         }
       } else {
-        this.responseEvent?.next(ev.data as WorkerResponseEvent<WorkerEvents.Callable>);
+        this.responseEvent.next(ev.data as WorkerResponseEvent<WorkerEvents>);
       }
     };
   }

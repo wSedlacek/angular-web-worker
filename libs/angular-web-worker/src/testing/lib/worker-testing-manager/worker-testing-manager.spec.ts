@@ -8,9 +8,6 @@ import { createTestManager, WorkerTestingManager } from './worker-testing-manage
 class TestClass {
   public property = 'propertyvalue';
 }
-
-@WebWorker()
-class UndecoratedClass {}
 // tslint:enable: max-classes-per-file
 
 describe('WorkerTestingManager: [angular-web-worker/testing]', () => {
