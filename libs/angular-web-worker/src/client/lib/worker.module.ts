@@ -29,14 +29,14 @@ export class WorkerModule {
   public static forRoot(workerDefinitions: WorkerDefinition[]): ModuleWithProviders<WorkerModule> {
     return {
       ngModule: WorkerModule,
-      providers: [WorkerManager, { provide: WORKER_DEFINITIONS, useValue: workerDefinitions }],
+      providers: [{ provide: WORKER_DEFINITIONS, useValue: workerDefinitions }],
     };
   }
 
   public static forFeature(): ModuleWithProviders<WorkerModule> {
     return {
       ngModule: WorkerModule,
-      providers: [WorkerManager, { provide: WORKER_DEFINITIONS, useExisting: WORKER_DEFINITIONS }],
+      providers: [{ provide: WORKER_DEFINITIONS, useExisting: WORKER_DEFINITIONS }],
     };
   }
 }

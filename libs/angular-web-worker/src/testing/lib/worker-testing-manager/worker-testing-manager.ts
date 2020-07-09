@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@angular/core';
+import { Inject } from '@angular/core';
 
 import { WorkerClient, WorkerManager } from 'angular-web-worker/client';
 import { Instantiable } from 'angular-web-worker/common';
@@ -14,7 +14,6 @@ import { WorkerTestingClient } from '../worker-testing-client/worker-testing-cli
  * `WorkerClient`
  *
  */
-@Injectable()
 export class WorkerTestingManager extends WorkerManager {
   constructor(@Inject(TESTING_WORKERS) private readonly workers: Instantiable<Object>[]) {
     super(workers?.map((target) => ({ target, useWorkerFactory: () => new FakeWorker() })));

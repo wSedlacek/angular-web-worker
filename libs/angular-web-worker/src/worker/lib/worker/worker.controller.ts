@@ -13,7 +13,9 @@ import {
   WorkerResponseEvent,
   WorkerUtils,
 } from 'angular-web-worker/common';
-import { Observable, Subject, Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
+
+import { OnWorkerDestroy, OnWorkerInit } from '../lifecycle-hooks';
 
 /**
  * Handles communication to and from a `WorkerClient` and triggers work with the worker class.
@@ -71,7 +73,10 @@ export class WorkerController<T> {
           this.handleSubscription(ev.data as WorkerRequestEvent<WorkerEvents.Observable>);
           break;
         case WorkerEvents.Init:
-          this.handleInit(ev.data as WorkerRequestEvent<WorkerEvents.Init>);
+          this.handleLifeCycle(ev.data as WorkerRequestEvent<WorkerEvents.Init>);
+          break;
+        case WorkerEvents.Destroy:
+          this.handleLifeCycle(ev.data as WorkerRequestEvent<WorkerEvents.Destroy>);
           break;
         default:
           break;
@@ -85,11 +90,11 @@ export class WorkerController<T> {
    * @param request The request that the response relates to
    * @param result data to return with the response
    */
-  private readonly response = <EventType extends WorkerEvents>(
+  private readonly response = <EventType extends WorkerEvents, R extends EventType | string>(
     type: EventType,
     request: WorkerRequestEvent<EventType>,
-    result: any
-  ): WorkerResponseEvent<EventType> => {
+    result?: R | null
+  ): WorkerResponseEvent<R> => {
     return {
       type,
       result,
@@ -108,7 +113,7 @@ export class WorkerController<T> {
   private error<EventType extends WorkerEvents>(
     type: WorkerEvents,
     request: WorkerRequestEvent<EventType>,
-    error: any
+    error?: any
   ): WorkerResponseEvent<EventType> {
     return {
       type,
@@ -142,26 +147,30 @@ export class WorkerController<T> {
    * async or not
    * @param request request recieved from the `WorkerClient`
    */
-  public handleInit(request: WorkerRequestEvent<WorkerEvents.Init>): void {
-    if (this.worker['onWorkerInit']) {
+  public handleLifeCycle(
+    request: WorkerRequestEvent<WorkerEvents.Init | WorkerEvents.Destroy>
+  ): void {
+    const hook: keyof OnWorkerInit | keyof OnWorkerDestroy =
+      request.type === WorkerEvents.Init ? 'onWorkerInit' : 'onWorkerDestroy';
+    if (this.worker[hook]) {
       try {
-        const result = this.worker['onWorkerInit']();
+        const result = this.worker[hook]();
         if (result instanceof Promise) {
           result
             .then(() => {
-              this.postMessage(this.response(WorkerEvents.Init, request, null));
+              this.postMessage(this.response(request.type, request));
             })
             .catch((err: any) => {
-              this.postMessage(this.error(WorkerEvents.Init, request, err));
+              this.postMessage(this.error(request.type, request, err));
             });
         } else {
-          this.postMessage(this.response(WorkerEvents.Init, request, null));
+          this.postMessage(this.response(request.type, request));
         }
       } catch (e) {
-        this.postMessage(this.error(WorkerEvents.Init, request, null));
+        this.postMessage(this.error(request.type, request));
       }
     } else {
-      this.postMessage(this.response(WorkerEvents.Init, request, null));
+      this.postMessage(this.response(request.type, request));
     }
   }
 
@@ -257,7 +266,7 @@ export class WorkerController<T> {
    * @param request request recieved from the `WorkerClient`
    */
   public handleSubscription(request: WorkerRequestEvent<WorkerEvents.Observable>): void {
-    let response: WorkerResponseEvent<WorkerEvents.Observable>;
+    let response: WorkerResponseEvent<WorkerEvents.Observable | string>;
 
     if (request.body !== null && !request.body.isUnsubscribe) {
       try {
@@ -363,7 +372,9 @@ export class WorkerController<T> {
    * Only used when the response is triggered by a request, which is not the case when the event type is `WorkerEvents.ObservableMessage`.
    * @param response response to send to the client
    */
-  public postMessage<EventType extends number>(response: WorkerResponseEvent<EventType>): void {
+  public postMessage<EventType extends number>(
+    response: WorkerResponseEvent<EventType | string>
+  ): void {
     try {
       this.messageBus.postMessage(response);
     } catch {

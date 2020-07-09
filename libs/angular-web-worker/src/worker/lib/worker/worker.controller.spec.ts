@@ -12,13 +12,13 @@ import { Subject } from 'rxjs';
 
 import { WorkerController } from './worker.controller';
 
-const MOCK_EVENT = 'mock-event';
-const messageBus = {
-  onmessage: jest.fn(),
-  postMessage: jest.fn(),
-};
-
 describe('WorkerController: [angular-web-worker]', () => {
+  const MOCK_EVENT = 'mock-event';
+  const messageBus = {
+    onmessage: jest.fn(),
+    postMessage: jest.fn(),
+  };
+
   const createRequest = <T extends number>(
     type: T,
     propertyName?: string,
@@ -61,15 +61,26 @@ describe('WorkerController: [angular-web-worker]', () => {
     expect(spy).toHaveBeenCalledWith({ isClient: false });
   });
 
-  it('should call the handleInit method when a init client request is recieved through onmessage', () => {
-    const spy = jest.spyOn(controller, 'handleInit');
-    const initRequest = createRequest(WorkerEvents.Init);
+  it('should call the onWorkerInit method when a init client request is recieved through onmessage', () => {
+    const spy = jest.spyOn(controller.workerInstance, 'onWorkerInit');
     messageBus.onmessage(
       new MessageEvent(MOCK_EVENT, {
-        data: initRequest,
+        data: createRequest(WorkerEvents.Init),
       })
     );
-    expect(spy).toHaveBeenCalledWith(initRequest);
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should call the onWorkerDestroy method when a destroy client request is recieved through onmessage', () => {
+    const spy = jest.spyOn(controller.workerInstance, 'onWorkerDestroy');
+    messageBus.onmessage(
+      new MessageEvent(MOCK_EVENT, {
+        data: createRequest(WorkerEvents.Destroy),
+      })
+    );
+
+    expect(spy).toHaveBeenCalled();
   });
 
   describe('Callables', () => {

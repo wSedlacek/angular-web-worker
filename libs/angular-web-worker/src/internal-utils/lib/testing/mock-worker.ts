@@ -1,6 +1,7 @@
 import {
   Accessible,
   Callable,
+  OnWorkerDestroy,
   OnWorkerInit,
   ShallowTransfer,
   Subscribable,
@@ -11,7 +12,7 @@ import { Subject } from 'rxjs';
 import { MockUser } from './mock-user';
 
 @WebWorker()
-export class MockWorker implements OnWorkerInit {
+export class MockWorker implements OnWorkerInit, OnWorkerDestroy {
   @Accessible()
   public property1 = 'property1';
 
@@ -45,8 +46,12 @@ export class MockWorker implements OnWorkerInit {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 100);
+      }, 10);
     });
+  }
+
+  public async onWorkerDestroy(): Promise<void> {
+    return this.onWorkerInit();
   }
 
   @Callable()

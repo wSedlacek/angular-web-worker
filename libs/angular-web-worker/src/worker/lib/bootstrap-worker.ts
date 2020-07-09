@@ -11,7 +11,7 @@ declare var self: DedicatedWorkerGlobalScope;
  */
 export const bootstrapWorker = <T>(target: Instantiable<T>, worker: WorkerMessageBus = self) => {
   const messageBus: WorkerMessageBus = {
-    onmessage: worker.onmessage,
+    onmessage: null,
     postMessage: (data) => worker.postMessage(data),
   };
 

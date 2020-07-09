@@ -97,7 +97,6 @@ export class WorkerClient<T> {
 
     this.castPromise(
       this.sendRequest(WorkerEvents.Init, {
-        body: () => null,
         isConnectionRequest: true,
         resolve: () => {
           this._isConnected$.next(true);
@@ -110,15 +109,18 @@ export class WorkerClient<T> {
   /**
    * Terminates the worker and unsubscribes from any subscriptions created from the `subscribe()` method
    */
-  public destroy(): void {
+  public async destroy(): Promise<void> {
     // TODO: Goals
     // Change _isConnected to _isDestroyed
     // Throw an error if a request is attempted after destruction
     // In order to startup again a new instance will be needed
-    if (this._isConnected$.getValue()) {
-      for (const key of this.observables.keys()) {
-        this.removeSubscription(key);
-      }
+    if (this.isConnected) {
+      for (const key of this.observables.keys()) this.removeSubscription(key);
+
+      await this.sendRequest(WorkerEvents.Destroy, {
+        secretError: 'Could not destroy worker',
+      });
+
       this.workerRef.terminate();
       this.secrets.clear();
       this.observables.clear();

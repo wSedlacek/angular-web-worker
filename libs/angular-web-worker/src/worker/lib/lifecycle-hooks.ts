@@ -7,3 +7,10 @@
 export interface OnWorkerInit {
   onWorkerInit(): Promise<void> | void;
 }
+
+/**
+ * Lifecycle hook that is called before the work class is terminated
+ */
+export interface OnWorkerDestroy {
+  onWorkerDestroy(): Promise<void> | void;
+}

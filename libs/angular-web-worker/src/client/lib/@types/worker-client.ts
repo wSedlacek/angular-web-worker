@@ -42,15 +42,18 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * Whether the request is triggered by the init event and therefore not requiring the client's connected property to be true
    */
   isConnectionRequest?: boolean;
+
   /**
    * The worker property to which the request relates. Can be provided as a string, or a lambda function which is used in the `WorkerClient`'s APIs
    */
   workerProperty?: ((worker: T) => ReturnType) | string;
+
   /**
    * The error message when the `WorkerClient.sendRequest()` method is rejected from the targeted worker property/method not returning the correct `SecretResult`
    * when called upon by the client
    */
   secretError: string;
+
   /**
    * Any conditions that need to be met, in addition to the correct `SecretResult`, before a request can be made to the worker
    */
@@ -58,12 +61,14 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
     if(secretResult?: SecretResult<EventType> | null): boolean;
     reject(secretResult?: SecretResult<EventType> | null): any;
   }[];
+
   /**
    * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the client sends the request to
    * the worker and after the `SecretKey` is validated, along with any `additionalConditions` if the option was specified. The value returned
    * by this function is available for use through the `additionalContext` arguments in the `body`, `resolve` and `beforeReject` options' functions
    */
   beforeRequest?(secretResult: SecretResult<EventType>): any;
+
   /**
    * Must return the `WorkerRequestEvent.body` that will be sent to the worker.  The structure is determined by the `WorkerClientRequestOpts`'s
    * `EventType` type argument
@@ -81,6 +86,7 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
     : EventType extends WorkerEvents.Observable
     ? WorkerSubscribableBody
     : null;
+
   /**
    * Function that returns the value that is resolved by the `WorkerClient.sendRequest()` method. Only occurs if a successful request has been made to, and a response has been recieved from the worker
    * @param response the `WorkerResponseEvent` that was returned by the worker
@@ -93,6 +99,7 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
     secretResult?: SecretResult<EventType> | null,
     additionalContext?: any
   ): any;
+
   /**
    * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the request is rejected due to an error
    * being caught

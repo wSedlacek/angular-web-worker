@@ -20,15 +20,25 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
     await client.connectionCompleted;
   });
 
+  afterEach(async () => {
+    await client.destroy();
+  });
+
   it('should should connect on construction', () => {
     expect(client.isConnected).toBe(true);
   });
 
-  it('should run `onWorkerInit` after connection', async () => {
+  it('should run `onWorkerInit` on construction', async () => {
     const onWorkerInit = jest.spyOn(controller.workerInstance, 'onWorkerInit');
     client = newClient(worker, MockWorker);
     await client.connectionCompleted;
     expect(onWorkerInit).toHaveBeenCalled();
+  });
+
+  it('should run `onWorkerDestroy` on destruction', async () => {
+    const onWorkerDestroy = jest.spyOn(controller.workerInstance, 'onWorkerDestroy');
+    await client.destroy();
+    expect(onWorkerDestroy).toHaveBeenCalled();
   });
 
   describe('.get()', () => {

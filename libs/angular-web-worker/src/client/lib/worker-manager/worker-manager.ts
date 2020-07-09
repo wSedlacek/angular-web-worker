@@ -32,7 +32,7 @@ import { WorkerClient } from '../worker-client/worker-client';
  *
  * }
  */
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class WorkerManager {
   /**
    * List of workers with details to created new worker instances. Passed into `WorkerModule.forWorkers()`
