@@ -1,43 +1,30 @@
-import { WebWorker } from 'angular-web-worker';
+import { MockWorker, UndecoratedWorker } from 'angular-web-worker/mocks';
 import { createTestClient } from 'angular-web-worker/testing';
 
 import { FakeWorker } from '../mocks';
 import { WorkerTestingClient } from './worker-testing-client';
 
-// tslint:disable: max-classes-per-file
-@WebWorker()
-class TestClass {
-  public property = 'propertyvalue';
-}
-
-class UndecoratedClass {}
-// tslint:enable: max-classes-per-file
-
 describe('WorkerTestingClient: [angular-web-worker/testing]', () => {
-  let worker: WorkerTestingClient<TestClass>;
+  let worker: WorkerTestingClient<MockWorker>;
   beforeEach(() => {
-    worker = new WorkerTestingClient<TestClass>({
-      target: TestClass,
+    worker = new WorkerTestingClient<MockWorker>({
+      target: MockWorker,
       useWorkerFactory: () => new FakeWorker(),
     });
   });
 
-  it('should be configured for testing', () => {
-    expect(worker['isTestClient']).toEqual(true);
-    expect(worker['runInApp']).toEqual(true);
-  });
-
-  it('should provide access to the underlying worker instance', () => {
-    expect(worker.workerInstance instanceof TestClass).toEqual(true);
+  it('should provide access to the underlying worker instance', async () => {
+    await worker.connectionCompleted;
+    expect(worker.workerInstance).toBeInstanceOf(MockWorker);
   }, 200);
 });
 
 describe('createTestWorker(): [angular-web-worker/testing]', () => {
   it('Should create a new instance of a TestWorkerClient', () => {
-    expect(createTestClient(TestClass) instanceof WorkerTestingClient).toEqual(true);
+    expect(createTestClient(MockWorker)).toBeInstanceOf(WorkerTestingClient);
   });
 
   it('should throw an error if an undecorated class is provided', () => {
-    expect(() => createTestClient(UndecoratedClass)).toThrow();
+    expect(() => createTestClient(UndecoratedWorker)).toThrow();
   });
 });

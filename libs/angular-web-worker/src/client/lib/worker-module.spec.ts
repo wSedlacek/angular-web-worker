@@ -4,18 +4,11 @@ import {
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
 
-import { WebWorker } from 'angular-web-worker';
 import { WorkerManager } from 'angular-web-worker/client';
+import { MockWorker, UndecoratedWorker } from 'angular-web-worker/mocks';
 import { FakeWorker } from 'angular-web-worker/testing';
 
 import { WorkerModule } from './worker.module';
-
-// tslint:disable: max-classes-per-file
-@WebWorker()
-class TestClass {}
-
-class UndecoratedTestClass {}
-// tslint:enable: max-classes-per-file
 
 describe('WorkerModule: [angular-web-worker/client]', () => {
   beforeEach(() => {
@@ -26,7 +19,7 @@ describe('WorkerModule: [angular-web-worker/client]', () => {
   it('should return a module with a WorkerManager provider ', () => {
     TestBed.configureTestingModule({
       imports: [
-        WorkerModule.forRoot([{ target: TestClass, useWorkerFactory: () => new FakeWorker() }]),
+        WorkerModule.forRoot([{ target: MockWorker, useWorkerFactory: () => new FakeWorker() }]),
       ],
     });
     const service = TestBed.inject(WorkerManager);
@@ -36,8 +29,8 @@ describe('WorkerModule: [angular-web-worker/client]', () => {
   it('should throw an error when undecorated worker definitions are provided', () => {
     TestBed.configureTestingModule({
       imports: [
-        { target: TestClass, useWorkerFactory: () => new FakeWorker() },
-        { target: UndecoratedTestClass, useWorkerFactory: () => new FakeWorker() },
+        { target: MockWorker, useWorkerFactory: () => new FakeWorker() },
+        { target: UndecoratedWorker, useWorkerFactory: () => new FakeWorker() },
       ],
     });
 

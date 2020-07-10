@@ -1,5 +1,5 @@
 import { WorkerController } from 'angular-web-worker';
-import { MockWorker } from 'angular-web-worker/internal-utils';
+import { MockWorker } from 'angular-web-worker/mocks';
 
 import { ClientWebWorker } from './client-web-worker';
 
@@ -16,7 +16,7 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
 
   it('should transfer messages from a controller to a client', () => {
     const spy = jest.spyOn(worker, 'onmessage');
-    worker['messageBus'].postMessage({ bodyProperty: 'value' });
+    worker['messageBus'].postMessage({ bodyProperty: 'value' } as any);
     expect(spy).toHaveBeenLastCalledWith(
       expect.objectContaining({
         data: {
@@ -28,7 +28,7 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
 
   it('should transfer messages from a client to a controller', () => {
     const spy = jest.spyOn(worker['messageBus'], 'onmessage');
-    worker.postMessage({ bodyProperty: 'value' });
+    worker.postMessage({ bodyProperty: 'value' } as any);
     expect(spy).toHaveBeenLastCalledWith(
       expect.objectContaining({
         data: {
@@ -42,7 +42,7 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
     it('should serialize if configured for testing', () => {
       const spy = jest.spyOn(worker, 'serialize');
       spyOn(worker['messageBus'], 'onmessage');
-      worker.postMessage({ bodyProperty: 'value' });
+      worker.postMessage({ bodyProperty: 'value' } as any);
       expect(spy).toHaveBeenCalled();
     });
 
@@ -57,14 +57,14 @@ describe('ClientWebWorker: [angular-web-worker/client]', () => {
   describe('.messageBus.postMessage()', () => {
     it('should serialize if configured for testing', () => {
       const spy = jest.spyOn(worker, 'serialize');
-      worker['messageBus'].postMessage({ bodyProperty: 'value' });
+      worker['messageBus'].postMessage({ bodyProperty: 'value' } as any);
       expect(spy).toHaveBeenCalled();
     });
 
     it('should not serialize if not configured for testing', () => {
       worker = new ClientWebWorker(MockWorker, false);
       const spy = jest.spyOn(worker, 'serialize');
-      worker['messageBus'].postMessage({ bodyProperty: 'value' });
+      worker['messageBus'].postMessage({ bodyProperty: 'value' } as any);
       expect(spy).not.toHaveBeenCalled();
     });
   });

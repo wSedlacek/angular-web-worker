@@ -19,7 +19,7 @@ export class WorkerTestingClient<T> extends WorkerClient<T> {
    */
   get workerInstance(): T | undefined {
     if (this.isConnected) {
-      return (this['workerRef'] as ClientWebWorker<T>).workerInstance;
+      return (this.workerRef as ClientWebWorker<T>).workerInstance;
     }
 
     throw new Error('Cannot access worker instance until the connect method has been called');

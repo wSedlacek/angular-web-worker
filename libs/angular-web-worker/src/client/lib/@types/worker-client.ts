@@ -6,6 +6,7 @@ import {
   WorkerCallableBody,
   WorkerEvents,
   WorkerResponseEvent,
+  WorkerSubjectableBody,
   WorkerSubscribableBody,
 } from 'angular-web-worker/common';
 
@@ -20,14 +21,12 @@ export interface WorkerClientObservableRef {
    * `WorkerClient.subscribe()` or `WorkerClient.observe()` method.
    */
   subject: Subject<any>;
-  /**
-   * A subscription to the `WorkerClientObservableRef.subject` which is created and returned by the `WorkerClient.subscribe()` method.
-   */
-  subscription?: Subscription;
+
   /**
    *  An observable from the `WorkerClientObservableRef.subject` which is created and returned by the `WorkerClient.observe()` method.
    */
   observable?: Observable<any>;
+
   /**
    * The name of the worker's RxJS subject property that the client is listening to
    */
@@ -67,7 +66,7 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * the worker and after the `SecretKey` is validated, along with any `additionalConditions` if the option was specified. The value returned
    * by this function is available for use through the `additionalContext` arguments in the `body`, `resolve` and `beforeReject` options' functions
    */
-  beforeRequest?(secretResult: SecretResult<EventType>): any;
+  beforeRequest?(secretResult: SecretResult<EventType> | null): any;
 
   /**
    * Must return the `WorkerRequestEvent.body` that will be sent to the worker.  The structure is determined by the `WorkerClientRequestOpts`'s
@@ -85,6 +84,10 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
     ? WorkerAccessibleBody
     : EventType extends WorkerEvents.Observable
     ? WorkerSubscribableBody
+    : EventType extends WorkerEvents.Subjectable
+    ? WorkerSubjectableBody
+    : EventType extends WorkerEvents.Unsubscribable
+    ? WorkerSubscribableBody
     : null;
 
   /**
@@ -98,7 +101,9 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
     response?: WorkerResponseEvent<any>,
     secretResult?: SecretResult<EventType> | null,
     additionalContext?: any
-  ): any;
+  ): ReturnType | undefined;
+
+  observable?(key: string): WorkerClientObservableRef | undefined;
 
   /**
    * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the request is rejected due to an error
@@ -109,7 +114,7 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    */
   beforeReject?(
     response?: WorkerResponseEvent<any>,
-    secretResult?: SecretResult<EventType>,
+    secretResult?: SecretResult<EventType> | null,
     additionalContext?: any
   ): void;
 }

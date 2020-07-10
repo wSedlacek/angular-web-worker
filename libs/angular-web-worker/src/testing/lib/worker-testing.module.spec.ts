@@ -4,18 +4,11 @@ import {
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
 
-import { WebWorker } from 'angular-web-worker';
 import { WorkerManager } from 'angular-web-worker/client';
+import { MockWorker, UndecoratedWorker } from 'angular-web-worker/mocks';
 import { WorkerTestingManager } from 'angular-web-worker/testing';
 
 import { WorkerTestingModule } from './worker-testing.module';
-
-// tslint:disable: max-classes-per-file
-@WebWorker()
-class TestClass {}
-
-class UndecoratedTestClass {}
-// tslint:enable: max-classes-per-file
 
 describe('WorkerTestingModule: [angular-web-worker/testing]', () => {
   beforeEach(() => {
@@ -25,7 +18,7 @@ describe('WorkerTestingModule: [angular-web-worker/testing]', () => {
 
   it('should return a module with a WorkerManager provider with a WorkerTestingManager', () => {
     TestBed.configureTestingModule({
-      imports: [WorkerTestingModule.forRoot([TestClass])],
+      imports: [WorkerTestingModule.forRoot([MockWorker])],
     });
     const service = TestBed.inject(WorkerManager);
     expect(service instanceof WorkerTestingManager).toEqual(true);
@@ -33,7 +26,7 @@ describe('WorkerTestingModule: [angular-web-worker/testing]', () => {
 
   it('should throw an error when undecorated worker definitions are provided', () => {
     TestBed.configureTestingModule({
-      imports: [WorkerTestingModule.forRoot([TestClass, UndecoratedTestClass])],
+      imports: [WorkerTestingModule.forRoot([MockWorker, UndecoratedWorker])],
     });
 
     expect(() => TestBed.inject(WorkerManager)).toThrowError();

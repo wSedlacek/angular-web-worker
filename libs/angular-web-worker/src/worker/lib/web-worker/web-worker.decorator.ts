@@ -1,6 +1,7 @@
 import {
   AccessibleMetaData,
   Instantiable,
+  SubjectableMetaData,
   SubscribableMetaData,
   WorkerAnnotations,
   WorkerConfig,
@@ -11,7 +12,7 @@ import {
 /**
  * Collection of factory functions for the factory as attached to a single object which allows for testing of imported function
  */
-export const WorkerFactoryFunctions = {
+const WorkerFactoryFunctions = {
   /**
    * Attaches a worker configuration to an instance of a worker class
    * @param instance instance of the worker class
@@ -47,7 +48,7 @@ export const WorkerFactoryFunctions = {
             if (config?.isClient) {
               return {
                 clientSecret: config.clientSecret,
-                type: WorkerEvents.Accessible,
+                types: [WorkerEvents.Accessible],
                 propertyName: item.name,
                 body: {
                   get: item.get,
@@ -90,7 +91,47 @@ export const WorkerFactoryFunctions = {
             if (config?.isClient) {
               return {
                 clientSecret: config.clientSecret,
-                type: WorkerEvents.Observable,
+                types: [WorkerEvents.Observable, WorkerEvents.Unsubscribable],
+                propertyName: item.name,
+                body: null,
+              };
+            }
+
+            return _val;
+          },
+          set: (newVal: typeof _val) => {
+            _val = newVal;
+          },
+          enumerable: true,
+          configurable: true,
+        });
+      });
+    }
+  },
+
+  /**
+   * Adds a get wrapper to all properties decorated with `@Subscribable()` which returns a `SecretResult` if the class instance is a client, otherwise it will use the default behavior
+   * @param instance instance of the worker class
+   */
+  configureSubjectables: <I extends Object>(instance: I) => {
+    const subjects = WorkerUtils.getAnnotation<SubjectableMetaData[]>(
+      instance.constructor,
+      WorkerAnnotations.Subjectables,
+      []
+    );
+
+    if (subjects.length) {
+      subjects.forEach((item) => {
+        let _val = instance[item.name];
+
+        Object.defineProperty(instance, item.name, {
+          get: () => {
+            const config: WorkerConfig | undefined = instance[WorkerAnnotations.Config];
+
+            if (config?.isClient) {
+              return {
+                clientSecret: config.clientSecret,
+                types: [WorkerEvents.Subjectable],
                 propertyName: item.name,
                 body: null,
               };
@@ -120,6 +161,7 @@ export function WebWorker<I>(options?: { deps?: unknown[] }): (Target: Instantia
       WorkerFactoryFunctions.setWorkerConfig(instance, config);
       WorkerFactoryFunctions.configureAccessibles(instance);
       WorkerFactoryFunctions.configureSubscribables(instance);
+      WorkerFactoryFunctions.configureSubjectables(instance);
 
       return instance;
     });

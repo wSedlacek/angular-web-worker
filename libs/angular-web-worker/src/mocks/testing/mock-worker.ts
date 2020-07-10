@@ -4,6 +4,7 @@ import {
   OnWorkerDestroy,
   OnWorkerInit,
   ShallowTransfer,
+  Subjectable,
   Subscribable,
   WebWorker,
 } from 'angular-web-worker';
@@ -36,11 +37,19 @@ export class MockWorker implements OnWorkerInit, OnWorkerDestroy {
   @Accessible({ shallowTransfer: true })
   public transferableTestProp?: MockUser;
 
+  @Accessible()
+  public promise = Promise.resolve('promise');
+
   @Subscribable()
   public subscriptionTest: Subject<any> = new Subject<string>();
 
   @Subscribable()
   public undefinedSubscriptionTest?: Subject<any>;
+
+  @Subjectable()
+  public subject = new Subject<string>();
+
+  public undecoratedSubject = new Subject<string>();
 
   public async onWorkerInit(): Promise<void> {
     return new Promise((resolve) => {

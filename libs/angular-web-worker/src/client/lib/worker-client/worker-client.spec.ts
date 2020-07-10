@@ -1,9 +1,13 @@
+import { Observable, of } from 'rxjs';
+
 import { bootstrapWorker, WorkerController } from 'angular-web-worker';
 import { Instantiable } from 'angular-web-worker/common';
-import { MockWorker } from 'angular-web-worker/internal-utils';
+import { MockWorker } from 'angular-web-worker/mocks';
 import { FakeWorker } from 'angular-web-worker/testing';
 
 import { WorkerClient } from './worker-client';
+
+const sleep = async (time?: number) => new Promise((resolve) => setTimeout(resolve, time));
 
 describe('WorkerClient: [angular-web-worker/client]', () => {
   let worker: FakeWorker;
@@ -57,9 +61,13 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(property3).toBe(controller.workerInstance.property3);
     });
 
-    it('should reject when attempting to access undecorated properties', async () => {
-      const promise = client.get((w) => w.undecoratedProperty);
-      await expect(promise).rejects.toBeTruthy();
+    it('should resolve promises', async () => {
+      const promise = await client.get((w) => w.promise);
+      expect(promise).toBe('promise');
+    });
+
+    it('should throw when attempting to access undecorated properties', () => {
+      expect(() => client.get((w) => w.undecoratedProperty)).toThrow();
     });
   });
 
@@ -74,9 +82,8 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(controller.workerInstance.property1).toBe('update');
     });
 
-    it('should reject when attempting to set undecorated properties', async () => {
-      const promise = client.set((w) => w.undecoratedProperty, 'update');
-      await expect(promise).rejects.toBeTruthy();
+    it('should reject when attempting to set undecorated properties', () => {
+      expect(() => client.set((w) => w.undecoratedProperty, 'update')).toThrow();
     });
   });
 
@@ -105,12 +112,80 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
       expect(user2).toMatchObject({ name: 'John', age: 26 });
     });
 
-    it('should reject when attempting to call undecorated methods', async () => {
-      const promise = client.call((w) => w.undecoratedFunction());
-      await expect(promise).rejects.toBeTruthy();
+    it('should resolve promise return values', async () => {
+      const result = await client.call((w) => w.asyncReturnTestFn());
+      expect(result).toBe('async');
+    });
+
+    it('should throw when attempting to call undecorated methods', () => {
+      expect(() => client.call((w) => w.undecoratedFunction())).toThrow();
     });
   });
 
-  // TODO: .subscribe(), .unsubscribe(), .observe(), .destroy()
-  // TODO: new method .next()
+  describe('.observe()', () => {
+    it('should return an observable', () => {
+      const result = client.observe((w) => w.event);
+      expect(result).toBeInstanceOf(Observable);
+    });
+
+    it('should be subscribed to the worker', async (done) => {
+      const observer = client.observe((w) => w.event);
+
+      observer.subscribe((value) => {
+        expect(value).toBe('value');
+        done();
+      });
+
+      await sleep();
+      controller.workerInstance.event.next('value');
+    });
+
+    it('should throw when attempting to subscribe to undecorated workers', () => {
+      expect(() => client.observe((w) => w.undecoratedSubject)).toThrow();
+    });
+  });
+
+  describe('.unsubscribe()', () => {
+    it('should close an active subscription', async () => {
+      const observer = client.observe((w) => w.event);
+      const subscription = observer.subscribe();
+      await client.unsubscribe(observer);
+      expect(subscription.closed).toBeTruthy();
+    });
+
+    it('should throws if an unknown subscription is passed in', () => {
+      const unknownSubscription = of().subscribe();
+      expect(() => client.unsubscribe(unknownSubscription)).toThrow();
+    });
+  });
+
+  describe('.destroy()', () => {
+    it('should close all observables', async () => {
+      const subscription = client.observe((w) => w.event).subscribe();
+      await client.destroy();
+      expect(subscription.closed).toBeTruthy();
+    });
+
+    it('should refuse additional request', async () => {
+      await client.destroy();
+      await expect(client.get((w) => w.property1)).rejects.toBeTruthy();
+    });
+  });
+
+  describe('.next()', () => {
+    it('should return a promise', () => {
+      const result = client.next((w) => w.subject, 'value');
+      expect(result).toBeInstanceOf(Promise);
+    });
+
+    it('should pass values to the worker subject', async () => {
+      const next = jest.spyOn(controller.workerInstance.subject, 'next');
+      await client.next((w) => w.subject, 'value');
+      expect(next).toHaveBeenCalledWith('value');
+    });
+
+    it('should reject when attempting to next undecorated methods', () => {
+      expect(() => client.next((w) => w.undecoratedSubject, 'value')).toThrow();
+    });
+  });
 });

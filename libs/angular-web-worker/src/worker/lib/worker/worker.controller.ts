@@ -13,6 +13,7 @@ import {
   WorkerResponseEvent,
   WorkerUtils,
 } from 'angular-web-worker/common';
+import { errorFactory, replaceErrors, responseFactory } from 'angular-web-worker/utils';
 import { Observable, Subscription } from 'rxjs';
 
 import { OnWorkerDestroy, OnWorkerInit } from '../lifecycle-hooks';
@@ -25,6 +26,7 @@ export class WorkerController<T> {
    * Instance of the worker class
    */
   private readonly worker: T;
+
   /**
    * Dictionary of subscriptions to RxJS subjects within the worker
    */
@@ -66,81 +68,36 @@ export class WorkerController<T> {
         case WorkerEvents.Callable:
           this.handleCallable(ev.data as WorkerRequestEvent<WorkerEvents.Callable>);
           break;
+
         case WorkerEvents.Accessible:
           this.handleAccessible(ev.data as WorkerRequestEvent<WorkerEvents.Accessible>);
           break;
+
+        case WorkerEvents.Unsubscribable:
+          this.handleUnsubscribe(ev.data as WorkerRequestEvent<WorkerEvents.Unsubscribable>);
+          break;
+
         case WorkerEvents.Observable:
           this.handleSubscription(ev.data as WorkerRequestEvent<WorkerEvents.Observable>);
           break;
+
+        case WorkerEvents.Subjectable:
+          this.handleSubjectable(ev.data as WorkerRequestEvent<WorkerEvents.Subjectable>);
+          break;
+
         case WorkerEvents.Init:
           this.handleLifeCycle(ev.data as WorkerRequestEvent<WorkerEvents.Init>);
           break;
+
         case WorkerEvents.Destroy:
           this.handleLifeCycle(ev.data as WorkerRequestEvent<WorkerEvents.Destroy>);
           break;
+
         default:
           break;
       }
     };
   }
-
-  /**
-   * A utility function to create a new `WorkerResponseEvent` from the details provided by the `WorkerRequestEvent`, as well as the result to be returned
-   * @param type The type of worker event
-   * @param request The request that the response relates to
-   * @param result data to return with the response
-   */
-  private readonly response = <EventType extends WorkerEvents, R extends EventType | string>(
-    type: EventType,
-    request: WorkerRequestEvent<EventType>,
-    result?: R | null
-  ): WorkerResponseEvent<R> => {
-    return {
-      type,
-      result,
-      isError: false,
-      requestSecret: request.requestSecret,
-      propertyName: request.propertyName,
-    };
-  };
-
-  /**
-   * A utility function to create a new error in the form of a `WorkerResponseEvent` from the details provided by the `WorkerRequestEvent`, as well as the error to be returned
-   * @param type The type of worker event
-   * @param request The request that the error relates to
-   * @param result the error to be returned
-   */
-  private error<EventType extends WorkerEvents>(
-    type: WorkerEvents,
-    request: WorkerRequestEvent<EventType>,
-    error?: any
-  ): WorkerResponseEvent<EventType> {
-    return {
-      type,
-      isError: true,
-      requestSecret: request.requestSecret,
-      propertyName: request.propertyName,
-      error: JSON.stringify(error, this.replaceErrors),
-      result: null,
-    };
-  }
-
-  /**
-   * A utility function as the replacer for the `JSON.stringify()` function to make the native browser `Error` class serializable to JSON
-   */
-  private readonly replaceErrors = (_key: string, value: any) => {
-    if (value instanceof Error) {
-      const error = {};
-
-      Object.getOwnPropertyNames(value).forEach((property) => {
-        error[property] = value[property];
-      });
-
-      return error;
-    }
-
-    return value;
-  };
 
   /**
    * Handles `WorkerEvents.Init` requests from a client by calling the `onWorkerInit` hook if implemented and only responding once the hook has been completed, regardless of whether it is
@@ -158,19 +115,19 @@ export class WorkerController<T> {
         if (result instanceof Promise) {
           result
             .then(() => {
-              this.postMessage(this.response(request.type, request));
+              this.postMessage(responseFactory(request.type, request));
             })
             .catch((err: any) => {
-              this.postMessage(this.error(request.type, request, err));
+              this.postMessage(errorFactory(request.type, request, err));
             });
         } else {
-          this.postMessage(this.response(request.type, request));
+          this.postMessage(responseFactory(request.type, request));
         }
       } catch (e) {
-        this.postMessage(this.error(request.type, request));
+        this.postMessage(errorFactory(request.type, request));
       }
     } else {
-      this.postMessage(this.response(request.type, request));
+      this.postMessage(responseFactory(request.type, request));
     }
   }
 
@@ -181,17 +138,15 @@ export class WorkerController<T> {
   public async handleCallable(request: WorkerRequestEvent<WorkerEvents.Callable>): Promise<void> {
     let response: WorkerResponseEvent<any>;
     try {
-      if (request.body === null) throw new Error('No body');
       request.body.arguments = this.applyShallowTransferToCallableArgs(
         request,
         request.body.arguments
       );
-      if (request.propertyName === null) throw new Error('No property name');
       const result = await this.worker[request.propertyName](...request.body.arguments);
 
-      response = this.response(WorkerEvents.Callable, request, result);
+      response = responseFactory(WorkerEvents.Callable, request, result);
     } catch (e) {
-      response = this.error(WorkerEvents.Callable, request, e);
+      response = errorFactory(WorkerEvents.Callable, request, e);
     }
 
     this.postMessage(response);
@@ -231,9 +186,6 @@ export class WorkerController<T> {
   public handleAccessible(request: WorkerRequestEvent<WorkerEvents.Accessible>): void {
     let response: WorkerResponseEvent<any>;
     try {
-      if (request.propertyName === null) throw new Error('No property name');
-      if (request.body === null) throw new Error('No body');
-
       const metaData = WorkerUtils.getAnnotation<AccessibleMetaData[]>(
         this.workerClass,
         'accessibles',
@@ -241,7 +193,7 @@ export class WorkerController<T> {
       ).find((x) => x.name === request.propertyName);
 
       if (request.body.isGet) {
-        response = this.response(
+        response = responseFactory(
           WorkerEvents.Accessible,
           request,
           this.worker[request.propertyName]
@@ -251,10 +203,29 @@ export class WorkerController<T> {
         if (metaData?.shallowTransfer && this.worker[request.propertyName]) {
           this.worker[request.propertyName].__proto__ = metaData.type.prototype;
         }
-        response = this.response(WorkerEvents.Accessible, request, null);
+        response = responseFactory(WorkerEvents.Accessible, request, null);
       }
     } catch (e) {
-      response = this.error(WorkerEvents.Accessible, request, e);
+      response = errorFactory(WorkerEvents.Accessible, request, e);
+    }
+
+    this.postMessage(response);
+  }
+
+  /**
+   * Handles `WorkerEvents.Subjectable` requests from a client by emitting values to the subject
+   * @param request request recieved from the `WorkerClient`
+   */
+  public async handleSubjectable(
+    request: WorkerRequestEvent<WorkerEvents.Subjectable>
+  ): Promise<void> {
+    let response: WorkerResponseEvent<any>;
+    try {
+      const result = await this.worker[request.propertyName].next(request.body.value);
+
+      response = responseFactory(WorkerEvents.Subjectable, request, result);
+    } catch (e) {
+      response = errorFactory(WorkerEvents.Subjectable, request, e);
     }
 
     this.postMessage(response);
@@ -266,24 +237,32 @@ export class WorkerController<T> {
    * @param request request recieved from the `WorkerClient`
    */
   public handleSubscription(request: WorkerRequestEvent<WorkerEvents.Observable>): void {
-    let response: WorkerResponseEvent<WorkerEvents.Observable | string>;
-
-    if (request.body !== null && !request.body.isUnsubscribe) {
+    if (request.body !== null) {
+      let response: WorkerResponseEvent<WorkerEvents.Observable | string>;
       try {
         this.createSubscription(request);
-        response = this.response(WorkerEvents.Observable, request, request.body.subscriptionKey);
+        response = responseFactory(WorkerEvents.Observable, request, request.body.subscriptionKey);
       } catch (e) {
         this.removeSubscription(request.body.subscriptionKey);
-        response = this.error(WorkerEvents.Observable, request, e);
+        response = errorFactory(WorkerEvents.Observable, request, e);
       }
 
       this.postMessage(response);
-    } else {
+    }
+  }
+
+  /**
+   * Handles `WorkerEvents.Unsubscribable` requests from a client by removing the subscription from the subject
+   * @param request request recieved from the `WorkerClient`
+   */
+  public handleUnsubscribe(request: WorkerRequestEvent<WorkerEvents.Unsubscribable>): void {
+    if (request.body !== null) {
+      let response: WorkerResponseEvent<WorkerEvents.Unsubscribable | string>;
       try {
-        if (request.body?.subscriptionKey) this.removeSubscription(request.body.subscriptionKey);
-        response = this.response(WorkerEvents.Observable, request, null);
+        if (request.body.subscriptionKey) this.removeSubscription(request.body.subscriptionKey);
+        response = responseFactory(WorkerEvents.Unsubscribable, request, null);
       } catch (e) {
-        response = this.error(WorkerEvents.Observable, request, e);
+        response = errorFactory(WorkerEvents.Unsubscribable, request, e);
       }
 
       this.postMessage(response);
@@ -296,9 +275,6 @@ export class WorkerController<T> {
    * @param request request recieved from the `WorkerClient`
    */
   public createSubscription(request: WorkerRequestEvent<WorkerEvents.Observable>): void {
-    if (request.body === null) throw new Error('No body');
-    if (request.propertyName === null) throw new Error('No property name');
-
     const observable = this.worker[request.propertyName];
     if (!(observable instanceof Observable)) throw new Error('Property is not a Observable');
 
@@ -307,7 +283,7 @@ export class WorkerController<T> {
       request.body.subscriptionKey,
       observable.subscribe(
         (val) => {
-          const response: WorkerResponseEvent<WorkerObservableMessage> = {
+          this.postSubscriptionMessage({
             type: WorkerEvents.ObservableMessage,
             propertyName: request.propertyName,
             isError: false,
@@ -317,11 +293,10 @@ export class WorkerController<T> {
               type: WorkerObservableMessageTypes.Next,
               value: val,
             },
-          };
-          this.postSubscriptionMessage(response);
+          });
         },
         (err) => {
-          const response: WorkerResponseEvent<WorkerObservableMessage> = {
+          this.postSubscriptionMessage({
             type: WorkerEvents.ObservableMessage,
             propertyName: request.propertyName,
             isError: true,
@@ -329,13 +304,12 @@ export class WorkerController<T> {
             result: {
               key: request.body?.subscriptionKey,
               type: WorkerObservableMessageTypes.Error,
-              error: JSON.parse(JSON.stringify(err, this.replaceErrors)),
+              error: JSON.parse(JSON.stringify(err, replaceErrors)),
             },
-          };
-          this.postSubscriptionMessage(response);
+          });
         },
         () => {
-          const response: WorkerResponseEvent<WorkerObservableMessage> = {
+          this.postSubscriptionMessage({
             type: WorkerEvents.ObservableMessage,
             propertyName: request.propertyName,
             isError: false,
@@ -344,8 +318,7 @@ export class WorkerController<T> {
               key: request.body?.subscriptionKey,
               type: WorkerObservableMessageTypes.Complete,
             },
-          };
-          this.postSubscriptionMessage(response);
+          });
         }
       )
     );
@@ -372,13 +345,13 @@ export class WorkerController<T> {
    * Only used when the response is triggered by a request, which is not the case when the event type is `WorkerEvents.ObservableMessage`.
    * @param response response to send to the client
    */
-  public postMessage<EventType extends number>(
+  public postMessage<EventType extends WorkerEvents>(
     response: WorkerResponseEvent<EventType | string>
   ): void {
     try {
       this.messageBus.postMessage(response);
     } catch {
-      const errorResponse: WorkerResponseEvent<EventType> = {
+      this.messageBus.postMessage({
         type: response.type,
         isError: true,
         requestSecret: response.requestSecret,
@@ -386,12 +359,11 @@ export class WorkerController<T> {
         error: JSON.parse(
           JSON.stringify(
             new Error('Unable to serialize response from worker to client'),
-            this.replaceErrors
+            replaceErrors
           )
         ),
         result: null,
-      };
-      this.messageBus.postMessage(errorResponse);
+      });
     }
   }
 
@@ -404,7 +376,7 @@ export class WorkerController<T> {
     try {
       this.messageBus.postMessage(response);
     } catch (e) {
-      const errorResponse: WorkerResponseEvent<WorkerObservableMessage> = {
+      this.messageBus.postMessage({
         type: response.type,
         isError: true,
         requestSecret: response.requestSecret,
@@ -415,12 +387,11 @@ export class WorkerController<T> {
           error: JSON.parse(
             JSON.stringify(
               new Error('Unable to serialize subscribable response from worker to client'),
-              this.replaceErrors
+              replaceErrors
             )
           ),
         },
-      };
-      this.messageBus.postMessage(errorResponse);
+      });
     }
   }
 }

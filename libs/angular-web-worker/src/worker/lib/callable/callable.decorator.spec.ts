@@ -71,7 +71,7 @@ describe('@Callable(): [angular-web-worker]', () => {
 
     const result: SecretResult<WorkerEvents.Callable> = {
       propertyName: 'doSomething',
-      type: WorkerEvents.Callable,
+      types: [WorkerEvents.Callable],
       clientSecret: 'my-secret',
       body: {
         args: ['hello', 1],

@@ -3,11 +3,13 @@ import {
   bootstrapWorker,
   Callable,
   OnWorkerInit,
+  Subjectable,
   Subscribable,
   WebWorker,
 } from 'angular-web-worker';
-import { interval } from 'rxjs';
+import { interval, Subject } from 'rxjs';
 
+import { map } from 'rxjs/operators';
 import '../register-override';
 
 @WebWorker()
@@ -19,6 +21,12 @@ export class AppWorker implements OnWorkerInit {
 
   @Subscribable()
   public events$ = interval(1000);
+
+  @Subjectable()
+  public input$ = new Subject<string>();
+
+  @Subscribable()
+  public output$ = this.input$.pipe(map((val) => `Output: ${val}`));
 
   @Override()
   public onWorkerInit(): void {}

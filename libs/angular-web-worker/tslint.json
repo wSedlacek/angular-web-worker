@@ -17,7 +17,9 @@
     ],
     "no-invalid-this": false,
     "comment-type": [true, "doc", "singleline", "directive"],
-    "no-duplicate-string": false
+    "no-duplicate-string": false,
+    "promise-function-async": false,
+    "max-file-line-count": [true, 600]
   },
   "linterOptions": {
     "exclude": ["!**/*"]

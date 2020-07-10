@@ -53,7 +53,7 @@ export const Callable = (options?: CallableOpts) => <T extends Object, M extends
     if (config?.isClient) {
       return {
         clientSecret: this[WorkerAnnotations.Config].clientSecret,
-        type: WorkerEvents.Callable,
+        types: [WorkerEvents.Callable],
         propertyName: propertyKey,
         body: { args },
       };

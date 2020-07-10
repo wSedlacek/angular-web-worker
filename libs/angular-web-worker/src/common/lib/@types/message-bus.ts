@@ -1,3 +1,5 @@
+import { WorkerEvents, WorkerObservableMessage, WorkerResponseEvent } from './worker-events';
+
 /**
  * Interface for message bus provided into a `WorkerController` allowing the communication mechanism to be interchanged between in-app, and native worker
  * communication mechanisms
@@ -11,7 +13,7 @@ export interface WorkerMessageBus {
   /**
    * Messages transferred from a client to a controller
    */
-  postMessage(resp: any): void;
+  postMessage(resp: WorkerResponseEvent<WorkerEvents | WorkerObservableMessage | string>): void;
 }
 
 /**

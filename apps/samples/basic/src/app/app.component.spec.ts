@@ -19,14 +19,17 @@ describe('AppComponent', () => {
     expect(spectator.fixture.componentInstance).toBeTruthy();
   });
 
-  it('should update the result after clicking', fakeAsync(() => {
-    const button = spectator.query(byText('Get'));
-    if (button !== null) spectator.click(button);
-    spectator.tick();
-    expect(spectator.component.result).toBe('Work');
-  }));
+  it('should update the results after clicking the buttons', fakeAsync(() => {
+    const getButton = spectator.query(byText('Get'));
+    const pushButton = spectator.query(byText('Push'));
+    if (getButton !== null) spectator.click(getButton);
+    if (pushButton !== null) spectator.click(pushButton);
 
-  xit('should update the result after pushing', fakeAsync(() => {
-    throw new Error('Not Implemented');
+    spectator.tick();
+
+    const getResult = spectator.query(byText('Get Result', { exact: false }));
+    const pushResult = spectator.query(byText('Push Result', { exact: false }));
+    expect(getResult?.textContent).toContain('Work');
+    expect(pushResult?.textContent).toContain('New value');
   }));
 });

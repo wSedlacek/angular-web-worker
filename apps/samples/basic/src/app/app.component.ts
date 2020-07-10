@@ -2,7 +2,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import { WorkerManager } from 'angular-web-worker/client';
 
-import { Observable } from 'rxjs';
 import { AppWorker } from './app.worker';
 
 @Component({
@@ -13,13 +12,12 @@ import { AppWorker } from './app.worker';
 export class AppComponent implements OnInit, OnDestroy {
   constructor(private readonly workerManager: WorkerManager) {}
   private readonly client = this.workerManager.createClient(AppWorker);
-  public interval?: Observable<number>;
+  public interval$ = this.client.observe((w) => w.events$);
+  public output$ = this.client.observe((w) => w.output$);
   public result = '';
 
   @Override()
-  public async ngOnInit(): Promise<void> {
-    this.interval = await this.client.observe((w) => w.events$);
-  }
+  public ngOnInit(): void {}
 
   @Override()
   public ngOnDestroy(): void {
@@ -35,6 +33,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   public pushValue(): void {
-    throw new Error('Not Implemented');
+    this.client.next((w) => w.input$, `New value ${Date.now()}`);
   }
 }

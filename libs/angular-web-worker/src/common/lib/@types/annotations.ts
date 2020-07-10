@@ -6,6 +6,7 @@ export enum WorkerAnnotations {
   Config = '__worker_config__',
   Callables = 'callables',
   Observables = 'observables',
+  Subjectables = 'subjectables',
   Accessibles = 'accessibles',
   ShallowTransferArgs = 'shallowTransferArgs',
   IsWorker = 'isWorker',
@@ -77,10 +78,25 @@ export interface CallableMetaData {
 }
 
 /**
- * Metadata attached to a worker's prototype for any RxJS Subject properties that are decorated with `@Subscribable()`. Allows a `WorkerClient` to
+ * Metadata attached to a worker's prototype for any RxJS Observable properties that are decorated with `@Subscribable()`. Allows a `WorkerClient` to
  *  subscribe to and/or create observables from the subject within the worker
  */
 export interface SubscribableMetaData {
+  /**
+   * Name of the decorated property
+   */
+  name: string;
+  /**
+   * Prototype of the decorated property's design type
+   */
+  type: Function;
+}
+
+/**
+ * Metadata attached to a worker's prototype for any RxJS Subject properties that are decorated with `@Subjectable()`. Allows a `WorkerClient` to
+ * subscribe to and/or create observables from the subject within the worker
+ */
+export interface SubjectableMetaData {
   /**
    * Name of the decorated property
    */
