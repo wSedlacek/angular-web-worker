@@ -290,14 +290,20 @@ export class WorkerClient<T> {
   }
 
   /**
-   * Creates and returns a RxJS observable that is in sync with a RxJS subject within a worker. The worker subject must be decorated with `@Subscribable()` otherwise the
-   * promise will be rejected. Supports all four RxJS subjects being, `Subject`,  `BehaviorSubject`, `ReplaySubject` and `AsyncSubject`.
+   * Creates and returns a RxJS observable that is in sync with a RxJS subject within a worker.
+   * The worker subject must be decorated with `@Subscribable()` otherwise an error will be thrown
+   * on subscription. Supports all four RxJS subjects being, `Subject`, `BehaviorSubject`, `ReplaySubject`
+   * and `AsyncSubject`.
    *
    * **UNSUBSCRIBING**
    *
-   * While under normal circumstances you don't need to unsubscribe from an RxJS observable, when an observable is created from a worker subject a subscription is also created in the worker.
-   * To release the resources in the worker the `WorkerClient.unsubscribe(observable)` method should be used. The `WorkerClient.destroy()` method will
-   * dispose of all observables correctly.
+   * Use as you typically would for any RxJS observable unsubscribing any time you subscribe.
+   * The `async` pipe will unsubscribe for you if you use that. The client will proxy all your request
+   * and close subscriptions to the worker when you have no active subscriptions
+   *
+   * Additionally, when the client is destroyed with `.destroy()` all active subscriptions will be
+   * closed.
+   *
    *
    * @Serialized
    * @param workerProperty A lambda expression that returns the targeted RxJS subject of the worker. The worker argument in the expression only has the properties owned by the worker class (no methods)
