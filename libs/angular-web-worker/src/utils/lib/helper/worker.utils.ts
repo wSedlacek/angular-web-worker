@@ -55,17 +55,15 @@ export const requestFactory = <EventType extends WorkerEvents>({
   requestSecret,
   noProperty,
   secretResult,
-  additionalContext,
   body,
 }: {
   type: EventType;
   requestSecret: string;
   noProperty: boolean;
   secretResult: SecretResult<EventType> | null;
-  additionalContext: any;
   body?(
     secretResult: SecretResult<EventType> | null,
-    additionalContext: any
+    propertyName?: string
   ): WorkerRequestBody<EventType>;
 }): WorkerRequestEvent<EventType> => ({
   type,
@@ -73,7 +71,7 @@ export const requestFactory = <EventType extends WorkerEvents>({
   propertyName: (noProperty || secretResult === null
     ? null
     : secretResult.propertyName) as WorkerRequestPropertyName<EventType>,
-  body: (body ? body(secretResult, additionalContext) : null) as WorkerRequestBody<EventType>,
+  body: (body ? body(secretResult) : null) as WorkerRequestBody<EventType>,
 });
 
 export const mockRequestFactory = <EventType extends WorkerEvents>(

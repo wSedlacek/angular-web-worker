@@ -1,13 +1,8 @@
 import { SecretResult, WorkerEvents, WorkerResponseEvent } from 'angular-web-worker/common';
 
-export const isValidResponse = (
-  type: WorkerEvents,
-  requestSecret: string,
-  propertyName?: string
-) => (resp: WorkerResponseEvent<WorkerEvents>) =>
-  type === resp.type &&
-  requestSecret === resp.requestSecret &&
-  (propertyName === resp.propertyName || propertyName === undefined);
+export const isValidResponse = (requestSecret: string) => (
+  resp: WorkerResponseEvent<WorkerEvents>
+) => requestSecret === resp.requestSecret;
 
 /**
  * Generates a random key

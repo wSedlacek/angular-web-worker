@@ -62,22 +62,14 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
   }[];
 
   /**
-   * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the client sends the request to
-   * the worker and after the `SecretKey` is validated, along with any `additionalConditions` if the option was specified. The value returned
-   * by this function is available for use through the `additionalContext` arguments in the `body`, `resolve` and `beforeReject` options' functions
-   */
-  beforeRequest?(secretResult: SecretResult<EventType> | null): any;
-
-  /**
    * Must return the `WorkerRequestEvent.body` that will be sent to the worker.  The structure is determined by the `WorkerClientRequestOpts`'s
    * `EventType` type argument
    * @param secretResult the `SecretResult` that is returned when the client called upon the targeted worker property or method
-   * @param additionalContext if the `beforeRequest` option is provided it is the returned result of that function
+   * @param propertyName the name of the property trying to be accessed
    * otherwise it will be undefined
    */
   body?(
-    secretResult: SecretResult<EventType> | null,
-    additionalContext?: any
+    secretResult: SecretResult<EventType> | null
   ): EventType extends WorkerEvents.Callable
     ? WorkerCallableBody
     : EventType extends WorkerEvents.Accessible
@@ -94,27 +86,20 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
    * Function that returns the value that is resolved by the `WorkerClient.sendRequest()` method. Only occurs if a successful request has been made to, and a response has been recieved from the worker
    * @param response the `WorkerResponseEvent` that was returned by the worker
    * @param secretResult the `SecretResult` that was returned when the client called upon the targeted worker property or method
-   * @param additionalContext if the `beforeRequest` option is provided it is the returned result of that function
-   * otherwise it will be undefined
    */
   resolve?(
     response?: WorkerResponseEvent<any>,
-    secretResult?: SecretResult<EventType> | null,
-    additionalContext?: any
+    secretResult?: SecretResult<EventType> | null
   ): ReturnType | undefined;
-
-  observable?(key: string): WorkerClientObservableRef | undefined;
 
   /**
    * A placeholder to perform unique work in the more generic `WorkerClient.sendRequest()` method. This occurs immediately before the request is rejected due to an error
    * being caught
    * @param response the `WorkerResponseEvent` that was returned by the worker
    * @param secretResult the `SecretResult` that was returned when the client called upon the targeted worker property or method
-   * @param additionalContext if the `beforeRequest` option is provided it is the returned result of that function
    */
   beforeReject?(
     response?: WorkerResponseEvent<any>,
-    secretResult?: SecretResult<EventType> | null,
-    additionalContext?: any
+    secretResult?: SecretResult<EventType> | null
   ): void;
 }

@@ -43,9 +43,6 @@ export class MockWorker implements OnWorkerInit, OnWorkerDestroy {
   @Subscribable()
   public subscriptionTest: Subject<any> = new Subject<string>();
 
-  @Subscribable()
-  public undefinedSubscriptionTest?: Subject<any>;
-
   @Subjectable()
   public subject = new Subject<string>();
 

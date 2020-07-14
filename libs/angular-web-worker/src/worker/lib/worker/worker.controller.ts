@@ -276,7 +276,9 @@ export class WorkerController<T> {
    */
   public createSubscription(request: WorkerRequestEvent<WorkerEvents.Observable>): void {
     const observable = this.worker[request.propertyName];
-    if (!(observable instanceof Observable)) throw new Error('Property is not a Observable');
+    if (!(observable instanceof Observable)) {
+      throw new Error(`Property ${request.propertyName} is not a Observable`);
+    }
 
     this.removeSubscription(request.body.subscriptionKey);
     this.subscriptions.set(

@@ -14,7 +14,7 @@ export enum WorkerEvents {
 
   /**
    * Event type for creating subscriptions or observables from RxJS subjects within a worker that are decorated with `@Subscribable()`.
-   * Triggered in the `WorkerClient.subscribe()` and `WorkerClient.observe()
+   * Triggered in the `WorkerClient.observe()
    */
   Observable,
 

@@ -1,4 +1,4 @@
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { bootstrapWorker, WorkerController } from 'angular-web-worker';
 import { Instantiable } from 'angular-web-worker/common';
@@ -7,7 +7,7 @@ import { FakeWorker } from 'angular-web-worker/testing';
 
 import { WorkerClient } from './worker-client';
 
-const sleep = async (time?: number) => new Promise((resolve) => setTimeout(resolve, time));
+const tick = async (time?: number) => new Promise((resolve) => setTimeout(resolve, time));
 
 describe('WorkerClient: [angular-web-worker/client]', () => {
   let worker: FakeWorker;
@@ -136,26 +136,33 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
         done();
       });
 
-      await sleep();
+      await tick();
       controller.workerInstance.event.next('value');
     });
 
     it('should throw when attempting to subscribe to undecorated workers', () => {
-      expect(() => client.observe((w) => w.undecoratedSubject)).toThrow();
+      expect(() => client.observe((w) => w.undecoratedSubject).subscribe()).toThrow();
     });
-  });
 
-  describe('.unsubscribe()', () => {
-    it('should close an active subscription', async () => {
+    it('should manage active subscriptions to the worker', async () => {
+      expect(controller.workerInstance.event.observers).toHaveLength(0);
       const observer = client.observe((w) => w.event);
-      const subscription = observer.subscribe();
-      await client.unsubscribe(observer);
-      expect(subscription.closed).toBeTruthy();
-    });
 
-    it('should throws if an unknown subscription is passed in', () => {
-      const unknownSubscription = of().subscribe();
-      expect(() => client.unsubscribe(unknownSubscription)).toThrow();
+      const subscription1 = observer.subscribe();
+      const subscription2 = observer.subscribe();
+      await tick();
+
+      expect(controller.workerInstance.event.observers).toHaveLength(1);
+
+      subscription1.unsubscribe();
+      await tick();
+
+      expect(controller.workerInstance.event.observers).toHaveLength(1);
+
+      subscription2.unsubscribe();
+      await tick();
+
+      expect(controller.workerInstance.event.observers).toHaveLength(0);
     });
   });
 

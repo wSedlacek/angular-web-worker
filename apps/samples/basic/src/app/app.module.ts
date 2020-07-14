@@ -5,9 +5,10 @@ import { WorkerModule } from 'angular-web-worker/client';
 
 import { AppComponent } from './app.component';
 import { AppWorker } from './app.worker';
+import { ExampleComponent } from './components/example/example.component';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, ExampleComponent],
   imports: [
     BrowserModule,
     WorkerModule.forRoot([
