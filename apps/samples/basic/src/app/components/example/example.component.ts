@@ -4,7 +4,7 @@ import { ExampleService } from '../../services/example.service';
 @Component({
   selector: 'app-example',
   templateUrl: './example.component.html',
-  styleUrls: ['./example.component.css'],
+  styleUrls: ['./example.component.scss'],
 })
 export class ExampleComponent implements OnInit {
   constructor(private readonly service: ExampleService) {}

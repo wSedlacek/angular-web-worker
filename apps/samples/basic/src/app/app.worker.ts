@@ -34,6 +34,8 @@ export class AppWorker implements OnWorkerInit {
 
   @Callable()
   public async doSomeWork(value1: string, value2: number): Promise<string> {
+    console.log(self);
+
     return `${value1}-${value2 * 2}`;
   }
 }

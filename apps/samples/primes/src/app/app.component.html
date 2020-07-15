@@ -1,0 +1,5 @@
+<h1>Nth prime</h1>
+
+<label html-for="n">N</label>
+<input id="n" type="number" [formControl]="n" />
+<h3>{{ n.value }}th prime: {{ prime$ | async }}</h3>

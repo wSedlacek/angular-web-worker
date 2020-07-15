@@ -27,6 +27,9 @@
     },
     "samples-basic": {
       "tags": []
+    },
+    "samples-primes": {
+      "tags": []
     }
   }
 }

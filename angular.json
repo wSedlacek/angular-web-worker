@@ -134,6 +134,101 @@
           }
         }
       }
+    },
+    "samples-primes": {
+      "projectType": "application",
+      "schematics": {
+        "@nrwl/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "apps/samples/primes",
+      "sourceRoot": "apps/samples/primes/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/apps/samples/primes",
+            "index": "apps/samples/primes/src/index.html",
+            "main": "apps/samples/primes/src/main.ts",
+            "polyfills": "apps/samples/primes/src/polyfills.ts",
+            "tsConfig": "apps/samples/primes/tsconfig.app.json",
+            "aot": true,
+            "assets": ["apps/samples/primes/src/favicon.ico", "apps/samples/primes/src/assets"],
+            "styles": ["apps/samples/primes/src/styles.scss"],
+            "scripts": [],
+            "webWorkerTsConfig": "apps/samples/primes/tsconfig.worker.json"
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "apps/samples/primes/src/environments/environment.ts",
+                  "with": "apps/samples/primes/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "samples-primes:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "samples-primes:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "samples-primes:build"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "apps/samples/primes/tsconfig.app.json",
+              "apps/samples/primes/tsconfig.spec.json",
+              "apps/samples/primes/tsconfig.worker.json"
+            ],
+            "exclude": ["**/node_modules/**", "!apps/samples/primes/**/*"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "options": {
+            "jestConfig": "apps/samples/primes/jest.config.js",
+            "tsConfig": "apps/samples/primes/tsconfig.spec.json",
+            "passWithNoTests": true,
+            "setupFile": "apps/samples/primes/src/test-setup.ts"
+          }
+        }
+      }
     }
   },
   "cli": {
