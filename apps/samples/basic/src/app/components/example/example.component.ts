@@ -8,13 +8,8 @@ import { ExampleService } from '../../services/example.service';
 })
 export class ExampleComponent implements OnInit {
   constructor(private readonly service: ExampleService) {}
-  private readonly subscription = this.service.interval$.subscribe((data) => (this.data = data));
-  public data?: number;
+  public readonly data$ = this.service.interval$;
 
   @Override()
   public ngOnInit(): void {}
-
-  public unsubscribe(): void {
-    this.subscription.unsubscribe();
-  }
 }

@@ -5,6 +5,11 @@ import { WorkerDefinition } from '../@types';
 import { WORKER_DEFINITIONS } from '../tokens/worker.token';
 import { WorkerClient } from '../worker-client/worker-client';
 
+export interface WorkerManagerOptions {
+  runInApp: boolean;
+  timeout: number;
+}
+
 /**
  * Injectable angular service with a primary responsibility of acting as `WorkerClient` factory through its `createClient()` method.
  *
@@ -89,10 +94,10 @@ export class WorkerManager {
    */
   public createClient<T>(
     workerType: Instantiable<T>,
-    runInApp: boolean = !this.isBrowserCompatible
+    options: Partial<WorkerManagerOptions> = {}
   ): WorkerClient<T> {
     const definition = this.workerDefinitions.find((p) => p.target === workerType);
-    if (definition) return new WorkerClient<T>(definition, runInApp);
+    if (definition) return new WorkerClient<T>(definition, options);
 
     throw new Error(
       'WorkerManager: all web workers must be registered in the forWorkers function of the WorkerModule'

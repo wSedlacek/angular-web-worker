@@ -1,24 +1,20 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { createComponentFactory, Spectator } from '@ngneat/spectator/jest';
 
+import { WorkerTestingModule } from 'angular-web-worker/testing';
+
+import { AppWorker } from '../../app.worker';
 import { ExampleComponent } from './example.component';
 
 describe('ExampleComponent', () => {
-  let component: ExampleComponent;
-  let fixture: ComponentFixture<ExampleComponent>;
-
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [ExampleComponent],
-    }).compileComponents();
-  }));
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(ExampleComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+  let spectator: Spectator<ExampleComponent>;
+  const createComponent = createComponentFactory({
+    component: ExampleComponent,
+    imports: [WorkerTestingModule.forRoot([AppWorker])],
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
+  beforeEach(() => (spectator = createComponent()));
+
+  it('should create the app', () => {
+    expect(spectator.fixture.componentInstance).toBeTruthy();
   });
 });

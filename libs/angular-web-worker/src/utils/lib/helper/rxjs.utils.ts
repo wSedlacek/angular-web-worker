@@ -6,8 +6,8 @@ export interface SubjectHooks {
   next?(): void;
 }
 
-export const createHookedSubject = <T>(hooksFactory: () => SubjectHooks) => {
-  const hooks = hooksFactory();
+export const createHookedSubject = <T>(hooksFactory: (() => SubjectHooks) | SubjectHooks) => {
+  const hooks = typeof hooksFactory === 'function' ? hooksFactory() : hooksFactory;
   const subject = new Subject<T>();
   const applyHooks = (obj: Subject<T> | Subscription, prop: string | number | symbol) => {
     if (typeof prop === 'string' && prop in hooks) {

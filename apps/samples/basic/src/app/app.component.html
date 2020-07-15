@@ -5,4 +5,5 @@
 <h2>Do/Get Result: {{ result }}</h2>
 <h2>Push Result: {{ output$ | async }}</h2>
 
-<app-example></app-example>
+<button (click)="toggleExample()">Toggle</button>
+<app-example *ngIf="showExample"></app-example>

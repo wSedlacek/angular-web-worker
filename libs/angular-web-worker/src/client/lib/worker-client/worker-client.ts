@@ -31,6 +31,12 @@ import { catchError, find, first, timeout } from 'rxjs/operators';
 import { WorkerClientObservableRef, WorkerClientRequestOpts, WorkerDefinition } from '../@types';
 import { ClientWebWorker } from '../client-web-worker/client-web-worker';
 
+export interface WorkerClientOptions {
+  runInApp: boolean;
+  isTestClient: boolean;
+  timeout: number;
+}
+
 /**
  * Provides functionality for an Angular app to access the properties, call the methods and subscribe to the events in a web worker by managing
  * the communication between the app and the worker. Also provides the option to execute the worker code within the app should the browser not support web workers,
@@ -85,9 +91,9 @@ export class WorkerClient<T> {
    */
   constructor(
     private readonly definition: WorkerDefinition,
-    private readonly runInApp: boolean = false,
-    private readonly isTestClient: boolean = false
+    private readonly options: Partial<WorkerClientOptions> = {}
   ) {
+    const { runInApp = false, isTestClient = false } = this.options ?? {};
     this.workerSecret = this.generateSecretKey();
     const workerFactory = WorkerUtils.getAnnotation<(config: WorkerConfig) => T>(
       this.definition.target,
@@ -95,8 +101,8 @@ export class WorkerClient<T> {
     );
 
     this.worker = workerFactory({ isClient: true, clientSecret: this.workerSecret });
-    this.workerRef = this.runInApp
-      ? new ClientWebWorker(this.definition.target, this.isTestClient)
+    this.workerRef = runInApp
+      ? new ClientWebWorker(this.definition.target, isTestClient)
       : this.definition.useWorkerFactory();
 
     this.registerEvents();
@@ -151,7 +157,7 @@ export class WorkerClient<T> {
     return this._isConnected$
       .pipe(
         first((connection) => connection),
-        timeout(500),
+        timeout(this.options.timeout ?? 500),
         catchError(() => of(false))
       )
       .toPromise();
@@ -319,12 +325,9 @@ export class WorkerClient<T> {
     workerProperty: (workerObservables: ObservablesOnly<T>) => WorkerObservableType<ObservableType>
   ): Observable<ObservableType> {
     const { propertyName } = getWorkerProperty(this.worker, workerProperty);
-    const currentObservable: Observable<ObservableType> | undefined = this.observables.get(
-      propertyName
-    )?.observable;
 
     return (
-      currentObservable ??
+      this.observables.get(propertyName)?.observable ??
       (() => {
         const subject = createHookedSubject<ObservableType>(() => {
           let active = false;

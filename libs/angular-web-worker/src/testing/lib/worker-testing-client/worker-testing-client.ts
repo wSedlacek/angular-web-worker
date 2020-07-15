@@ -11,7 +11,7 @@ import { FakeWorker } from '../mocks';
  */
 export class WorkerTestingClient<T> extends WorkerClient<T> {
   constructor(definition: WorkerDefinition) {
-    super(definition, true, true);
+    super(definition, { runInApp: true, isTestClient: true });
   }
 
   /**

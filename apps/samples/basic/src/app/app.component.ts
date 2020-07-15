@@ -12,6 +12,7 @@ export class AppComponent implements OnInit {
   public readonly interval$ = this.service.interval$;
   public readonly output$ = this.service.output$;
   public result = '';
+  public showExample = false;
 
   @Override()
   public ngOnInit(): void {}
@@ -26,5 +27,9 @@ export class AppComponent implements OnInit {
 
   public pushValue(): void {
     this.service.pushValue();
+  }
+
+  public toggleExample(): void {
+    this.showExample = !this.showExample;
   }
 }
