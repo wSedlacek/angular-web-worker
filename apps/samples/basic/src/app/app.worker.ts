@@ -1,3 +1,5 @@
+import 'tslint-override/angular-register';
+
 import {
   Accessible,
   bootstrapWorker,
@@ -10,7 +12,6 @@ import {
 import { interval, Subject } from 'rxjs';
 
 import { map, shareReplay } from 'rxjs/operators';
-import '../register-override';
 
 @WebWorker()
 export class AppWorker implements OnWorkerInit {

@@ -11761,6 +11761,11 @@ tslint-override@^1.0.0:
   resolved "https://registry.yarnpkg.com/tslint-override/-/tslint-override-1.0.0.tgz#8ef9db587ae875239423b279ec9c7b37beea5569"
   integrity sha512-rgpHaXH7xXgl7OGTkQfZRtfgBqWF/v3yI0988A5wAh/pVD3TSzau4JXDm/0stTy6J+I9jtfArPc3Y6k2kjfgUw==
 
+tslint-override@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/tslint-override/-/tslint-override-1.0.1.tgz#d2cc55d1bf1bc4367bbeff03f2fef46b132e11a6"
+  integrity sha512-4TntqrasX0sRVrudapvi/g2MtEVWtY+TmwZF1vOWFDLpj89R988y/X6HxOolI+dA3uxcEXIleCEZT58Q/kXffQ==
+
 tslint-plugin-prettier@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/tslint-plugin-prettier/-/tslint-plugin-prettier-2.3.0.tgz#73fe71bf9f03842ac48c104122ca9b1de012ecf4"

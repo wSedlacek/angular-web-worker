@@ -124,7 +124,8 @@ export class WorkerClient<T> {
 
   /**
    * Terminates the worker and unsubscribes from any subscriptions created from the
-   * `subscribe()` method
+   * `observe()` method, clears out any pending request and destroys the worker
+   * triggering the `onWorkerDestroy` lifecycle method on the Worker
    */
   public async destroy(): Promise<void> {
     if (this.isConnected) {

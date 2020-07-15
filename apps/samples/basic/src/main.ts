@@ -1,4 +1,4 @@
-import './register-override';
+import 'tslint-override/angular-register';
 
 import { enableProdMode } from '@angular/core';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';

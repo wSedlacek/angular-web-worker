@@ -4,7 +4,7 @@
     "no-import-side-effect": [
       true,
       {
-        "ignore-module": "(angular-register|commands|jest-preset-angular|zone|reflect-metadata|register-override)$"
+        "ignore-module": "(angular-register|commands|jest-preset-angular|zone|reflect-metadata)$"
       }
     ]
   }
