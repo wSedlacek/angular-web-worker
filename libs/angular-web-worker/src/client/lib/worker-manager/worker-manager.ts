@@ -90,7 +90,7 @@ export class WorkerManager {
       );
     }
 
-    return new WorkerClient<T>(definition, { runInApp: this.isBrowserCompatible, ...options });
+    return new WorkerClient<T>(definition, { runInApp: !this.isBrowserCompatible, ...options });
   }
 
   /**

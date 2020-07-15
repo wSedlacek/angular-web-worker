@@ -8,8 +8,6 @@ import 'reflect-metadata';
 
 /**
  * Allows the decorated worker property to be subscribed to, or observed through the `WorkerClient.subscribe()` and `WorkerClient.observe()` methods.
- *
- * Can only be used on multicasted RxJS observables being a `Subject`,  `BehaviorSubject`, `ReplaySubject` or `AsyncSubject`.
  * @Serialized When data is transferred through `Subject.next()`, functions will not be copied and circular referencing structures will cause errors
  */
 export const Subscribable = () => <
