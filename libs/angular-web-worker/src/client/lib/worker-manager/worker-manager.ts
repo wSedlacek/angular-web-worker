@@ -1,14 +1,9 @@
 import { Instantiable, WorkerAnnotations, WorkerUtils } from 'angular-web-worker/common';
 
 import { Inject, Injectable, Optional } from '@angular/core';
-import { WorkerDefinition } from '../@types';
+import { WorkerClientOptions, WorkerDefinition } from '../@types';
 import { WORKER_DEFINITIONS } from '../tokens/worker.token';
 import { WorkerClient } from '../worker-client/worker-client';
-
-export interface WorkerManagerOptions {
-  runInApp: boolean;
-  timeout: number;
-}
 
 /**
  * Injectable angular service with a primary responsibility of acting as `WorkerClient` factory through its `createClient()` method.
@@ -66,42 +61,36 @@ export class WorkerManager {
    * Factory function that creates a new `WorkerClient`. The worker definitions must first be registered when importing the `WorkerModule.forWorkers()` module, otherwise
    * it will throw an error
    * @param workerType the worker class
-   * @param runInApp whether the execution of the worker code is run in the application's "thread". Defaults to run in the worker script
+   * @param options the `WorkerClientOptions` for altering the behavior of the created client
    * @example
    * // module ---
    * imports: [
-   *  WorkerModule.forWorkers([
-   *    {worker: AppWorker, initFn: () => new Worker('./app.worker.ts', {type: 'module'})},
+   *  WorkerModule.forRoot([
+   *    {
+   *      target: AppWorker,
+   *      useWorkerFactory: () => new Worker('./app.worker.ts', {type: 'module'})
+   *    },
    *  ])
    * ]
    *
    * // usage ---
-   * export class AppComponent implements OnInit {
-   *
-   *   constructor(private workerManager: WorkerManager) {}
-   *
-   *   ngOnInit() {
-   *      let client: WorkerClient<AppWorker> ;
-   *      if(workerManager.isBrowserCompatible) {
-   *          client = this.workerManager.createClient(AppWorker);
-   *      } else {
-   *          // only if worker execution does not have UI blocking code else implement other behavior
-   *          client = this.workerManager.createClient(AppWorker, true);
-   *      }
-   *   }
-   *
+   * export class AppComponent {
+   *   constructor(private readonly workerManager: WorkerManager) {}
+   *   private readonly client = this.workerManager.createClient(AppWorker)
    * }
    */
   public createClient<T>(
     workerType: Instantiable<T>,
-    options: Partial<WorkerManagerOptions> = {}
+    options: Partial<WorkerClientOptions> = {}
   ): WorkerClient<T> {
     const definition = this.workerDefinitions.find((p) => p.target === workerType);
-    if (definition) return new WorkerClient<T>(definition, options);
+    if (!definition) {
+      throw new Error(
+        'WorkerManager: All web workers must be registered in the forRoot function of the WorkerModule'
+      );
+    }
 
-    throw new Error(
-      'WorkerManager: all web workers must be registered in the forWorkers function of the WorkerModule'
-    );
+    return new WorkerClient<T>(definition, { runInApp: this.isBrowserCompatible, ...options });
   }
 
   /**

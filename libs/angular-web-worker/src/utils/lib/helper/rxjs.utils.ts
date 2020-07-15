@@ -9,34 +9,19 @@ export interface SubjectHooks {
 export const createHookedSubject = <T>(hooksFactory: (() => SubjectHooks) | SubjectHooks) => {
   const hooks = typeof hooksFactory === 'function' ? hooksFactory() : hooksFactory;
   const subject = new Subject<T>();
-  const applyHooks = (obj: Subject<T> | Subscription, prop: string | number | symbol) => {
-    if (typeof prop === 'string' && prop in hooks) {
-      return () => {
-        hooks[prop]();
+  const applyHooks = (obj: Subject<T> | Subscription, prop: string | number | symbol) =>
+    typeof prop === 'string' && prop in hooks
+      ? (...args: any[]) => {
+          hooks[prop](...args);
 
-        return obj[prop]();
-      };
-    }
-
-    return obj[prop];
-  };
+          return obj[prop](...args);
+        }
+      : obj[prop];
 
   return new Proxy(subject, {
-    get(subjectTarget, subjectProp): any {
-      if (subjectProp === 'subscribe') {
-        return (...args: any[]) => {
-          hooks[subjectProp]?.();
-          const subscription = subjectTarget[subjectProp](...args);
-
-          return new Proxy(subscription, {
-            get(subscriptionTarget, subscriptionProp): any {
-              return applyHooks(subscriptionTarget, subscriptionProp);
-            },
-          });
-        };
-      }
-
-      return applyHooks(subjectTarget, subjectProp);
-    },
+    get: (obj, prop) =>
+      prop === 'subscribe'
+        ? (...args: any[]) => new Proxy(applyHooks(obj, prop)(...args), { get: applyHooks })
+        : applyHooks(obj, prop),
   });
 };

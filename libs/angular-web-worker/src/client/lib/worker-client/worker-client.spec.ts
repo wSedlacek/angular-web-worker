@@ -21,7 +21,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
     worker = new FakeWorker();
     controller = bootstrapWorker(MockWorker, worker.messageBus);
     client = newClient(worker, MockWorker);
-    await client.connectionCompleted;
+    await client.connectionCompleted$.toPromise();
   });
 
   afterEach(async () => {
@@ -35,7 +35,7 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
   it('should run `onWorkerInit` on construction', async () => {
     const onWorkerInit = jest.spyOn(controller.workerInstance, 'onWorkerInit');
     client = newClient(worker, MockWorker);
-    await client.connectionCompleted;
+    await client.connectionCompleted$.toPromise();
     expect(onWorkerInit).toHaveBeenCalled();
   });
 

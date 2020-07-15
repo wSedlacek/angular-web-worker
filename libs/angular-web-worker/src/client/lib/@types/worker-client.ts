@@ -1,4 +1,4 @@
-import { Observable, Subject, Subscription } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 import {
   SecretResult,
@@ -9,6 +9,27 @@ import {
   WorkerSubjectableBody,
   WorkerSubscribableBody,
 } from 'angular-web-worker/common';
+
+/**
+ * Options available for the WorkerClient
+ */
+export interface WorkerClientOptions {
+  /**
+   * Wether to run the worker class in the main thread instead of a Worker class
+   */
+  runInApp: boolean;
+
+  /**
+   * Whether the instance is used for testing which will then mock serialization
+   */
+  isTestClient: boolean;
+
+  /**
+   * The timeout period for any given request when awaiting the connection to the worker.
+   * Defaults to `500` ms
+   */
+  timeout: number;
+}
 
 /**
  * A definition of a client observable that listens to events triggered by RxJS subjects in the worker and then triggers events in the browser

@@ -14,7 +14,7 @@ describe('WorkerTestingClient: [angular-web-worker/testing]', () => {
   });
 
   it('should provide access to the underlying worker instance', async () => {
-    await worker.connectionCompleted;
+    await worker.connectionCompleted$.toPromise();
     expect(worker.workerInstance).toBeInstanceOf(MockWorker);
   }, 200);
 });

@@ -9,7 +9,7 @@ import {
 } from 'angular-web-worker';
 import { interval, Subject } from 'rxjs';
 
-import { map } from 'rxjs/operators';
+import { map, shareReplay } from 'rxjs/operators';
 import '../register-override';
 
 @WebWorker()
@@ -20,7 +20,7 @@ export class AppWorker implements OnWorkerInit {
   public example = 'Work';
 
   @Subscribable()
-  public events$ = interval(1000);
+  public events$ = interval(1000).pipe(shareReplay());
 
   @Subjectable()
   public input$ = new Subject<string>();
