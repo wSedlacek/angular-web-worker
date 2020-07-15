@@ -376,8 +376,6 @@ export class WorkerClient<T> {
    * @param propertyName The name of the subscribable property on the workerRef
    */
   private unsubscribe(propertyName: string): Promise<void> {
-    this.removeSubscription(propertyName);
-
     return this.sendRequest(WorkerEvents.Unsubscribable, {
       workerProperty: propertyName,
       secretError: '',

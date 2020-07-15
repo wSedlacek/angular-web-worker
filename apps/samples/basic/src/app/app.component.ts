@@ -9,7 +9,6 @@ import { ExampleService } from './services/example.service';
 })
 export class AppComponent implements OnInit {
   constructor(private readonly service: ExampleService) {}
-  public readonly interval$ = this.service.interval$;
   public readonly output$ = this.service.output$;
   public result = '';
   public showExample = false;
