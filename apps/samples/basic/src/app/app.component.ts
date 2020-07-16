@@ -17,15 +17,15 @@ export class AppComponent implements OnInit {
   public ngOnInit(): void {}
 
   public async getData(): Promise<void> {
-    this.result = await this.service.getData();
+    this.result = await this.service.data;
   }
 
   public async doSomething(): Promise<void> {
-    this.result = await this.service.doSomething();
+    this.result = await this.service.doSomeWork(Date.now());
   }
 
   public pushValue(): void {
-    this.service.pushValue();
+    this.service.emitInput(`New value ${Date.now()}`);
   }
 
   public toggleExample(): void {

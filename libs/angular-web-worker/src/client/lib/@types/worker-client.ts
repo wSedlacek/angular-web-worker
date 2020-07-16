@@ -118,3 +118,12 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
     secretResult?: SecretResult<EventType> | null
   ): void;
 }
+
+/**
+ * An async function used to emit values into a Subjectable value in a worker.
+ *
+ * @example
+ * const emitInput = this.client.emitterFactory((w) => w.input$);
+ * await emitInput("Some Value");
+ */
+export type Emitter<T> = (value: T) => Promise<void>;

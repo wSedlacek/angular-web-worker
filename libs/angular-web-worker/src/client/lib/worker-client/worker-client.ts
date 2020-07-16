@@ -29,6 +29,7 @@ import { BehaviorSubject, combineLatest, Observable, Subject } from 'rxjs';
 import { find, first, map } from 'rxjs/operators';
 
 import {
+  Emitter,
   WorkerClientObservableRef,
   WorkerClientOptions,
   WorkerClientRequestOpts,
@@ -297,18 +298,20 @@ export class WorkerClient<T> {
    * @Serialized
    * @param workerProperty a lambda expression to select the subject which the value will be emitted in
    * @param value the next value to emit in the subject
-   * @example await client.next(w => w.subject, 'new-value')
+   * @example
+   * const emit = client.next(w => w.subject)
+   * await emit('new-value')
    */
-  public next<R>(
-    workerProperty: (workerSubjects: SubjectsOnly<T>) => Subject<R>,
-    value: R
-  ): Promise<void> {
-    return this.sendRequest(WorkerEvents.Subjectable, {
-      workerProperty,
-      secretError:
-        'WorkerClient: only methods decorated with @Subjectable() can be used in the next method',
-      body: () => ({ value }),
-    }) as Promise<void>;
+  public emitterFactory<R>(
+    workerProperty: (workerSubjects: SubjectsOnly<T>) => Subject<R>
+  ): Emitter<R> {
+    return (value: R) =>
+      this.sendRequest(WorkerEvents.Subjectable, {
+        workerProperty,
+        secretError:
+          'WorkerClient: only methods decorated with @Subjectable() can be used in the next method',
+        body: () => ({ value }),
+      }) as Promise<void>;
   }
 
   /**

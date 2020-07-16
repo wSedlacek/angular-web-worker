@@ -18,6 +18,6 @@ export class AppComponent implements OnInit {
 
   @Override()
   public ngOnInit(): void {
-    this.n.valueChanges.subscribe((num) => this.client.next((n) => n.input$, Number(num)));
+    this.n.valueChanges.subscribe(this.client.emitterFactory((n) => n.input$));
   }
 }
