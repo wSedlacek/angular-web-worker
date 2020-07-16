@@ -6,7 +6,7 @@ import { AppWorker } from '../app.worker';
 export class ExampleService implements OnDestroy {
   constructor(private readonly workerManager: WorkerManager) {}
   private readonly client = this.workerManager.createClient(AppWorker);
-  public readonly emitInput = this.client.emitterFactory((w) => w.input$);
+  public readonly emitter = this.client.createEmitter((w) => w.input$);
   public readonly interval$ = this.client.observe((w) => w.events$);
   public readonly output$ = this.client.observe((w) => w.output$);
 

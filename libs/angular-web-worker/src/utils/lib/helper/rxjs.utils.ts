@@ -11,8 +11,8 @@ export const createHookedSubject = <T>(hooksFactory: (() => SubjectHooks) | Subj
   const subject = new Subject<T>();
   const applyHooks = (obj: Subject<T> | Subscription, prop: string | number | symbol) =>
     typeof prop === 'string' && prop in hooks
-      ? (...args: any[]) => {
-          hooks[prop](...args);
+      ? (...args: unknown[]) => {
+          hooks[prop]();
 
           return obj[prop](...args);
         }
@@ -21,7 +21,7 @@ export const createHookedSubject = <T>(hooksFactory: (() => SubjectHooks) | Subj
   return new Proxy(subject, {
     get: (obj, prop) =>
       prop === 'subscribe'
-        ? (...args: any[]) => new Proxy(applyHooks(obj, prop)(...args), { get: applyHooks })
+        ? (...args: unknown[]) => new Proxy(applyHooks(obj, prop)(...args), { get: applyHooks })
         : applyHooks(obj, prop),
   });
 };

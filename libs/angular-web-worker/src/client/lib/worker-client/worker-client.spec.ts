@@ -179,20 +179,20 @@ describe('WorkerClient: [angular-web-worker/client]', () => {
     });
   });
 
-  describe('.emitterFactory()', () => {
+  describe('.createEmitter()', () => {
     it('should return a promise', () => {
-      const result = client.emitterFactory((w) => w.subject)('value');
+      const result = client.createEmitter((w) => w.subject).next('value');
       expect(result).toBeInstanceOf(Promise);
     });
 
     it('should pass values to the worker subject', async () => {
       const next = jest.spyOn(controller.workerInstance.subject, 'next');
-      await client.emitterFactory((w) => w.subject)('value');
+      await client.createEmitter((w) => w.subject).next('value');
       expect(next).toHaveBeenCalledWith('value');
     });
 
     it('should reject when attempting to next undecorated methods', () => {
-      expect(() => client.emitterFactory((w) => w.undecoratedSubject)('value')).toThrow();
+      expect(() => client.createEmitter((w) => w.undecoratedSubject).next('value')).toThrow();
     });
   });
 });

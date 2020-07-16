@@ -123,7 +123,9 @@ export interface WorkerClientRequestOpts<T, EventType extends number, ReturnType
  * An async function used to emit values into a Subjectable value in a worker.
  *
  * @example
- * const emitInput = this.client.emitterFactory((w) => w.input$);
- * await emitInput("Some Value");
+ * const emitter = this.client.createEmitter((w) => w.input$);
+ * await emitter.next("Some Value");
  */
-export type Emitter<T> = (value: T) => Promise<void>;
+export interface Emitter<T> {
+  next(value: T): Promise<void>;
+}

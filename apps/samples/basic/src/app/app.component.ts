@@ -24,8 +24,8 @@ export class AppComponent implements OnInit {
     this.result = await this.service.doSomeWork(Date.now());
   }
 
-  public pushValue(): void {
-    this.service.emitInput(`New value ${Date.now()}`);
+  public async pushValue(): Promise<void> {
+    await this.service.emitter.next(`New value ${Date.now()}`);
   }
 
   public toggleExample(): void {

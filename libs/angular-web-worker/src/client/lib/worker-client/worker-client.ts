@@ -293,25 +293,26 @@ export class WorkerClient<T> {
   }
 
   /**
-   * Emits a `value` into the `workerProperty` subject. The subject must be decorated with `@Subjectable`
-   * or an error will be thrown.
+   * Creates a emitter for the `workerProperty` subject. The subject must be decorated with
+   * `@Subjectable` or an error will be thrown.
    * @Serialized
    * @param workerProperty a lambda expression to select the subject which the value will be emitted in
-   * @param value the next value to emit in the subject
    * @example
-   * const emit = client.emitterFactory(w => w.subject)
-   * await emit('new-value')
+   * const emitter = client.createEmitter(w => w.subject)
+   * await emitter.next('new-value')
    */
-  public emitterFactory<R>(
+  public createEmitter<R>(
     workerProperty: (workerSubjects: SubjectsOnly<T>) => Subject<R>
   ): Emitter<R> {
-    return (value) =>
-      this.sendRequest(WorkerEvents.Subjectable, {
-        workerProperty,
-        secretError:
-          'WorkerClient: only methods decorated with @Subjectable() can be used in the next method',
-        body: () => ({ value }),
-      }) as Promise<void>;
+    return {
+      next: (value) =>
+        this.sendRequest(WorkerEvents.Subjectable, {
+          workerProperty,
+          secretError:
+            'WorkerClient: only methods decorated with @Subjectable() can be used in the next method',
+          body: () => ({ value }),
+        }) as Promise<void>,
+    };
   }
 
   /**
