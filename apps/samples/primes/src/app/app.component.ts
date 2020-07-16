@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { WorkerManager } from 'angular-web-worker/client';
+import { map } from 'rxjs/operators';
+
 import { AppWorker } from './app.worker';
 
 @Component({
@@ -18,6 +20,6 @@ export class AppComponent implements OnInit {
 
   @Override()
   public ngOnInit(): void {
-    this.n.valueChanges.subscribe(this.client.emitterFactory((n) => n.input$));
+    this.n.valueChanges.pipe(map(Number)).subscribe(this.client.emitterFactory((n) => n.input$));
   }
 }
