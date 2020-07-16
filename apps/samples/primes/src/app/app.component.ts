@@ -12,8 +12,9 @@ export class AppComponent implements OnInit {
   constructor(private readonly workerManager: WorkerManager, private readonly fb: FormBuilder) {}
   private readonly client = this.workerManager.createClient(AppWorker);
 
+  public readonly isConnected$ = this.client.isConnected$;
   public readonly prime$ = this.client.observe((w) => w.output$);
-  public readonly n = this.fb.control(0);
+  public readonly n = this.fb.control('');
 
   @Override()
   public ngOnInit(): void {

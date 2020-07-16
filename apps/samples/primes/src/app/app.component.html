@@ -1,5 +1,9 @@
 <h1>Nth prime</h1>
 
-<label html-for="n">N</label>
-<input id="n" type="number" [formControl]="n" />
-<h3>{{ n.value }}th prime: {{ prime$ | async }}</h3>
+<ng-container *ngIf="isConnected$ | async; else loading">
+  <label html-for="n">N</label>
+  <input id="n" type="number" [formControl]="n" />
+  <h3 *ngIf="n.value">{{ n.value }}th prime: {{ prime$ | async }}</h3>
+</ng-container>
+
+<ng-template #loading>Loading...</ng-template>

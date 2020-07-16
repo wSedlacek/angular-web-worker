@@ -2,7 +2,7 @@ import 'tslint-override/angular-register';
 
 import { bootstrapWorker, Subjectable, Subscribable, WebWorker } from 'angular-web-worker';
 import { merge, of, Subject } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 
 @WebWorker()
 export class AppWorker {
@@ -15,35 +15,40 @@ export class AppWorker {
       merge(
         of('Calculating....'),
         of(input).pipe(
-          map((n) => {
-            console.log(n);
-            let count = 0;
-            let num = 2;
-            while (count !== n) {
-              count += 1;
-              num = this.getNextPrime(num);
-            }
-
-            return num;
-          })
+          map((n) => this.nthPrime(n)),
+          catchError((err: Error) => of(err.message))
         )
       )
-    )
+    ),
+    shareReplay()
   );
 
-  public getNextPrime(num: number): number {
-    const n = num;
-    for (let i = n + 1; i < n * n; i += 1) {
-      if (this.isPrime(i)) return i;
+  private nthPrime(n: number): number {
+    let count = 0;
+
+    if (n < count) throw new Error('N must be positive');
+    for (const prime of this.getNextPrime()) {
+      if (count === n) return prime;
+      count += 1;
     }
 
-    return 0;
+    throw new Error('Somehow we have run out of numbers... sorry about that');
   }
 
-  public isPrime(n: number): boolean {
-    for (let i = 2; i < n; i += 1) if (n % i === 0) return false;
+  public *getNextPrime(): Generator<number> {
+    let nextNumber = 2;
+    while (true) {
+      if (this.isPrime(nextNumber)) yield nextNumber;
+      nextNumber += 1;
+    }
+  }
 
-    return true;
+  public isPrime(num: number): boolean {
+    for (let i = 2, s = Math.sqrt(num); i <= s; i += 1) {
+      if (num % i === 0) return false;
+    }
+
+    return num > 1;
   }
 }
 
