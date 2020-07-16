@@ -10,7 +10,7 @@ import { AppWorker } from './app.worker';
 })
 export class AppComponent implements OnInit {
   constructor(private readonly workerManager: WorkerManager, private readonly fb: FormBuilder) {}
-  private readonly client = this.workerManager.createClient(AppWorker, { timeout: 10000 });
+  private readonly client = this.workerManager.createClient(AppWorker);
 
   public readonly prime$ = this.client.observe((w) => w.output$);
   public readonly n = this.fb.control(0);

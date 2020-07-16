@@ -25,8 +25,8 @@ import {
   isValidResponse,
   requestFactory,
 } from 'angular-web-worker/utils';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { catchError, find, first, timeout } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, Subject } from 'rxjs';
+import { find, first, map } from 'rxjs/operators';
 
 import {
   WorkerClientObservableRef,
@@ -84,7 +84,12 @@ export class WorkerClient<T> {
    * Whether the worker is active after it is created with the `connect()` method and before it has
    * been terminated by the `destroy()` method
    */
-  protected readonly _isConnected$ = new BehaviorSubject(false);
+  protected readonly _isConnected$ = new BehaviorSubject<boolean>(false);
+
+  /**
+   * Whether the worker is destroyed after it is terminated with the `destroy()`
+   */
+  protected readonly _isDestroyed$ = new BehaviorSubject<boolean>(false);
 
   /**
    * Creates a new `WorkerClient`
@@ -140,6 +145,7 @@ export class WorkerClient<T> {
       this.secrets.clear();
       this.observables.clear();
       this._isConnected$.next(false);
+      this._isDestroyed$.next(true);
     }
   }
 
@@ -160,14 +166,12 @@ export class WorkerClient<T> {
   }
 
   /**
-   * Waits for connection to client for up to the `timeout` period.
-   * If a connection could not be established then a timeout false will be emitted.
+   * Waits for connection to client so long as the worker hasn't already been destroyed
    */
   public get connectionCompleted$(): Observable<boolean> {
-    return this._isConnected$.pipe(
-      first((connection) => connection),
-      timeout(this.options.timeout ?? 500),
-      catchError(() => of(false))
+    return combineLatest([this._isConnected$, this._isDestroyed$]).pipe(
+      first(([connection, destroyed]) => connection || destroyed),
+      map(([connection]) => connection)
     );
   }
 

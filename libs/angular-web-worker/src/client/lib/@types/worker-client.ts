@@ -23,12 +23,6 @@ export interface WorkerClientOptions {
    * Whether the instance is used for testing which will then mock serialization
    */
   isTestClient: boolean;
-
-  /**
-   * The timeout period for any given request when awaiting the connection to the worker.
-   * Defaults to `500` ms
-   */
-  timeout: number;
 }
 
 /**
