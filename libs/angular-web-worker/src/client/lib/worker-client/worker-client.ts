@@ -299,13 +299,13 @@ export class WorkerClient<T> {
    * @param workerProperty a lambda expression to select the subject which the value will be emitted in
    * @param value the next value to emit in the subject
    * @example
-   * const emit = client.next(w => w.subject)
+   * const emit = client.emitterFactory(w => w.subject)
    * await emit('new-value')
    */
   public emitterFactory<R>(
     workerProperty: (workerSubjects: SubjectsOnly<T>) => Subject<R>
   ): Emitter<R> {
-    return (value: R) =>
+    return (value) =>
       this.sendRequest(WorkerEvents.Subjectable, {
         workerProperty,
         secretError:
