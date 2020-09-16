@@ -9,7 +9,7 @@ export class ClientWebWorker<T> implements Worker {
   /**
    * Handles execution of code in a worker
    */
-  private controller: WorkerController<T>;
+  private controller?: WorkerController<T>;
 
   /**
    * Interface for message bus provided into a `WorkerController` allowing the communication mechanism to be interchanged between in-app, and native worker
@@ -66,7 +66,7 @@ export class ClientWebWorker<T> implements Worker {
    * Unsubscribes from all subscriptions in the `WorkerController` and then destroys the controller
    */
   public terminate(): void {
-    this.controller.removeAllSubscriptions();
+    this.controller?.removeAllSubscriptions();
     delete this.controller;
   }
 

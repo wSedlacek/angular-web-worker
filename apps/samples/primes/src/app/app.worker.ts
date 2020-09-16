@@ -35,7 +35,7 @@ export class AppWorker {
     throw new Error('Somehow we have run out of numbers... sorry about that');
   }
 
-  public *getNextPrime(): Generator<number> {
+  private *getNextPrime(): Generator<number> {
     let nextNumber = 2;
     while (true) {
       if (this.isPrime(nextNumber)) yield nextNumber;
@@ -43,13 +43,13 @@ export class AppWorker {
     }
   }
 
-  public isPrime(num: number): boolean {
+  private readonly isPrime = (num: number) => {
     for (let i = 2, s = Math.sqrt(num); i <= s; i += 1) {
       if (num % i === 0) return false;
     }
 
     return num > 1;
-  }
+  };
 }
 
 bootstrapWorker(AppWorker);
